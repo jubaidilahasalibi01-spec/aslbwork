@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cek Koneksi</title>
+<style>body{margin:0;padding:20px;background:#050b18;color:#e6f6ff;font:15px/1.5 system-ui,sans-serif}h1{font-size:20px}div.r{padding:8px 0;border-bottom:1px solid #1e3a5f;word-break:break-word}.ok{color:#6ee7b7}.no{color:#fca5a5}button{margin-top:16px;padding:10px 18px;border-radius:12px;border:1px solid #38bdf8;background:transparent;color:#e6f6ff}</style></head><body>
+<h1>Cek Koneksi Firebase</h1><div id="o"></div><button id="b" type="button">Salin hasil</button>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const CFG={apiKey:'AIzaSyCd3OEcXD5MCjEGfbVxwX3SagmMbFF-fc0',authDomain:'aslb-189b4.firebaseapp.com',databaseURL:'https://aslb-189b4-default-rtdb.asia-southeast1.firebasedatabase.app',projectId:'aslb-189b4',appId:'1:28348072066:web:eda232f21a9669eb35f49b'};
+const out=[];const o=document.getElementById('o');
+const add=(ok,t)=>{out.push((ok?'OK  ':'GAGAL ')+t);const d=document.createElement('div');d.className='r '+(ok?'ok':'no');d.textContent=(ok?'✓ ':'✗ ')+t;o.appendChild(d)};
+document.getElementById('b').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(out.join('\n'));document.getElementById('b').textContent='Tersalin'};
+(async()=>{
+ add(true,'Alamat: '+location.host+' | '+navigator.userAgent.slice(0,90));
+ try{localStorage.setItem('t','1');localStorage.removeItem('t');sessionStorage.setItem('t','1');add(true,'Penyimpanan browser (localStorage/sessionStorage) bisa dipakai')}catch(e){add(false,'Penyimpanan browser diblokir: '+e.name)}
+ add(typeof firebase!=='undefined','Skrip Firebase dimuat'+(typeof firebase==='undefined'?' (diblokir browser/jaringan/pemblokir iklan)':''));
+ try{const r=await fetch(CFG.databaseURL+'/profile.json?shallow=true');const j=await r.json();add(r.ok,'Server database terjangkau (HTTP '+r.status+')');if(r.ok)add(!!j,j?'Node profile ada, isi: '+Object.keys(j).length+' kolom':'Node profile KOSONG di server')}catch(e){add(false,'Server database tidak terjangkau: '+e.message)}
+ if(typeof firebase==='undefined')return;
+ try{firebase.initializeApp(CFG);const c=await firebase.auth().signInAnonymously();add(true,'Login anonim berhasil')}catch(e){add(false,'Login anonim gagal: '+(e.code||e.message))}
+ try{const s=await firebase.database().ref('profile').get();add(s.exists(),'Baca profile lewat SDK: '+(s.exists()?'berhasil':'kosong'))}catch(e){add(false,'Baca profile lewat SDK gagal: '+(e.code||e.message))}
+ add(true,'Selesai. Kirim hasil ini ke Claude.')
+})();
+</script></body></html>

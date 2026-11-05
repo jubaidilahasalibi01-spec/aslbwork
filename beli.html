@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Beli</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#050b18;color:#e6f6ff;font-family:system-ui,sans-serif}
+.c{width:min(92vw,460px);padding:28px;border-radius:24px;border:1px solid rgba(125,211,252,.4);background:rgba(10,20,40,.7)}
+h1{margin:0 0 4px;font-size:22px}p{margin:0 0 12px;color:#9fd8f0}label{display:block;font-size:13px;margin:12px 0 4px;color:#9fd8f0}
+input,select{width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid rgba(125,211,252,.4);background:#0b1730;color:#fff;font-size:15px}
+#pp{margin-top:18px}#msg{min-height:20px;margin-top:12px;font-size:14px}#ds{font-size:14px;margin-top:8px;color:#cfe9f7}
+#done{display:none;margin-top:18px;text-align:center}#code{display:block;margin:10px 0;padding:14px;border-radius:12px;background:rgba(56,189,248,.15);font:700 18px monospace;word-break:break-all}
+button{padding:10px 18px;border-radius:12px;border:1px solid #38bdf8;background:transparent;color:#e6f6ff;cursor:pointer}
+</style></head><body><main class="c">
+<h1 id="nm">Beli</h1><p>Pembayaran aman lewat PayPal</p>
+<label for="s">Pilih produk atau jasa</label><select id="s"></select><div id="ds"></div>
+<label for="n">Nama lengkap</label><input id="n" maxlength="80" autocomplete="name">
+<label for="e">Email</label><input id="e" type="email" maxlength="120" autocomplete="email">
+<div id="pp"></div><div id="msg"></div>
+<div id="done"><b>Pembayaran berhasil.</b><span id="code"></span><button id="cp" type="button">Salin kode</button><p style="margin-top:12px">Simpan kode ini sebagai bukti pembelian dan kunci akses.</p></div>
+</main>
+<script>
+const DB='https://aslb-189b4-default-rtdb.asia-southeast1.firebasedatabase.app';
+const $=i=>document.getElementById(i);let P={};
+const say=(t,bad)=>{$('msg').textContent=t;$('msg').style.color=bad?'#fca5a5':'#a7f3d0'};
+const ok=()=>$('n').value.trim().length>1&&/^\S+@\S+\.\S+$/.test($('e').value.trim());
+const show=()=>{const p=P[$('s').value];$('ds').textContent=p?('US$ '+Number(p.price).toFixed(2)+(p.desc?' - '+p.desc:'')):''};
+$('s').onchange=show;
+$('cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('code').textContent);$('cp').textContent='Tersalin'};
+(async()=>{
+ const [c,pr]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch(DB+'/products.json').then(r=>r.json())]);
+ $('nm').textContent=c.name;
+ Object.keys(pr||{}).forEach(k=>{const p=pr[k];if(p&&p.active!==false&&Number(p.price)>0){P[k]=p;const o=document.createElement('option');o.value=k;o.textContent=p.name;$('s').appendChild(o)}});
+ if(!Object.keys(P).length){say('Belum ada produk yang dijual.',1);return}
+ const q=new URLSearchParams(location.search).get('p');if(q&&P[q])$('s').value=q;show();
+ if(!c.clientId)throw 0;
+ const s=document.createElement('script');
+ s.src='https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(c.clientId)+'&currency=USD&intent=capture';
+ s.onload=()=>paypal.Buttons({
+  onClick:(d,a)=>{if(!ok()){say('Isi nama dan email dulu.',1);return a.reject()}say('')},
+  createOrder:async()=>{const j=await (await fetch('/api/paypal-create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({productId:$('s').value})})).json();if(!j.id)throw new Error();return j.id},
+  onApprove:async d=>{say('Memverifikasi pembayaran...');
+   const j=await (await fetch('/api/paypal-capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderID:d.orderID,name:$('n').value.trim(),email:$('e').value.trim()})})).json();
+   if(j.code){$('pp').style.display='none';$('done').style.display='block';$('code').textContent=j.code;say('')}else say(j.error||'Gagal. Simpan nomor pesanan: '+d.orderID,1)},
+  onError:()=>say('Pembayaran gagal atau dibatalkan.',1)
+ }).render('#pp');
+ document.head.appendChild(s);
+})().catch(()=>say('Halaman pembelian belum dikonfigurasi.',1));
+</script></body></html>

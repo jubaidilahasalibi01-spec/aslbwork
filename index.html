@@ -581,6 +581,7 @@ select.pmI{border-color:rgba(214,232,247,.55)!important}
    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
     <a href="#projects" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-titanium-accent text-black font-mono font-bold text-xs uppercase tracking-widest shadow-cyan-glow hover:bg-sky-300 text-center">Lihat Hasil Proyek <i class="fa-solid fa-arrow-right-long ml-2"></i></a>
     <a href="#contact" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-panel text-white font-mono text-xs uppercase tracking-widest border border-titanium-border hover:border-titanium-accent text-center">Hubungi Saya</a>
+    <a href="/beli.html" class="w-full sm:w-auto px-8 py-4 rounded-xl glass-panel text-white font-mono text-xs uppercase tracking-widest border border-titanium-border hover:border-titanium-accent text-center">Beli Proyek</a>
    </div>
    
   </div>
@@ -831,7 +832,7 @@ async function handleFormSubmit(){
 }
 const TXT={'Beranda':'Home','Profil':'About','Riwayat':'History','Keahlian':'Skills','Proyek':'Projects','Hasil Proyek':'Projects','Penghargaan':'Awards','Kontak':'Contact','Logout':'Logout',
 'Selamat Datang di':'Welcome to','Silakan pilih opsi akses untuk melanjutkan.':'Please choose an access option to continue.','MASUK PORTOFOLIO (PUBLIK)':'ENTER PORTFOLIO (PUBLIC)','Akses publik dapat melihat proyek tanpa sandi':'Public access: view my work without a password',
-'Lihat Hasil Proyek':'View My Work','Hubungi Saya':'Contact Me','Profil Ringkas':'Summary','Perjalanan':'Journey','Daftar Keahlian':'Skill List','Showcase Hasil Proyek':'Portfolio Showcase','Daftar aplikasi dan web buatan saya selama ini.':'Applications and websites I have built so far.','Prestasi':'Recognition','Informasi Kontak':'Contact Information',
+'Lihat Hasil Proyek':'View My Work','Hubungi Saya':'Contact Me','Beli Proyek':'Buy a Project','Profil Ringkas':'Summary','Perjalanan':'Journey','Daftar Keahlian':'Skill List','Showcase Hasil Proyek':'Portfolio Showcase','Daftar aplikasi dan web buatan saya selama ini.':'Applications and websites I have built so far.','Prestasi':'Recognition','Informasi Kontak':'Contact Information',
 'Fokus':'Focus','Lokasi':'Location','Status':'Status','Bahasa':'Languages','Email':'Email','Belum ada riwayat.':'No history yet.','Belum ada hasil proyek.':'No projects yet.','Belum ada penghargaan.':'No awards yet.',
 '"Terus belajar dan menghasilkan proyek nyata melalui kode."':'"Keep learning and creating real work through code."',
 '"Sebagai pengembang web, saya aktif mengembangkan skill pemrograman dasar hingga web modern melalui proyek pribadi dan latihan mandiri."':'"As a web developer, I actively build programming skills from the basics to modern web through personal projects and self-study."',
@@ -1025,7 +1026,7 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
  while(d.firstChild)document.body.appendChild(d.firstChild);
  }
  if(admin){const ri=renderInbox;renderInbox=function(){ri();const n=threadsCache.filter(t=>!isBlk(t.uid)&&unreadOf(t)>0).length,b=$('sbBadge');if(b){b.textContent=n;b.classList.toggle('hidden',!n)}}}
- if(ss.get(ROLE_KEY))mkSide();else rmSide();
+ rmSide();if(ss.get(ROLE_KEY))mkSide();
 })();
 /* gateway sesuai gambar */
 (function(){
