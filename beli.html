@@ -7,15 +7,15 @@ input,select{width:100%;box-sizing:border-box;padding:12px;border-radius:12px;bo
 #pp{margin-top:18px}#msg{min-height:20px;margin-top:12px;font-size:14px}#ds{font-size:14px;margin-top:8px;color:#cfe9f7}
 #done{display:none;margin-top:18px;text-align:center}#code{display:block;margin:10px 0;padding:14px;border-radius:12px;background:rgba(56,189,248,.15);font:700 18px monospace;word-break:break-all}
 button{padding:10px 18px;border-radius:12px;border:1px solid #38bdf8;background:transparent;color:#e6f6ff;cursor:pointer}
-.back{display:inline-block;margin-top:18px;padding:10px 26px;border-radius:12px;border:1px solid rgba(125,211,252,.3);background:transparent;color:#9fd8f0;font-weight:600;font-size:14px;letter-spacing:.6px;transition:.25s}
-.back:hover{border-color:#38bdf8;color:#e6f6ff;background:rgba(56,189,248,.12)}
+.back{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:12px 22px;border-radius:14px;border:1px solid rgba(125,211,252,.45);background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(14,165,233,.06));color:#e6f6ff;font-weight:600;font-size:14px;letter-spacing:.3px;backdrop-filter:blur(8px);transition:.25s}
+.back:hover{background:linear-gradient(135deg,#7dd3fc,#38bdf8);color:#04101f;transform:translateY(-1px);box-shadow:0 8px 24px rgba(56,189,248,.35)}
 </style></head><body><main class="c">
 <h1 id="nm">Beli</h1><p>Pembayaran aman lewat PayPal</p>
 <label for="s">Pilih produk atau jasa</label><select id="s"></select><div id="ds"></div>
 <label for="n">Nama lengkap</label><input id="n" maxlength="80" autocomplete="name">
 <label for="e">Email</label><input id="e" type="email" maxlength="120" autocomplete="email">
 <div id="pp"></div><div id="msg"></div>
-<button id="bt" type="button" class="back">Batal</button>
+<button id="bt" type="button" class="back">← Kembali ke Proyek</button>
 <div id="done"><b>Pembayaran berhasil.</b><span id="code"></span><button id="cp" type="button">Salin kode</button><p style="margin-top:12px">Simpan kode ini sebagai bukti pembelian dan kunci akses.</p></div>
 </main>
 <script>
