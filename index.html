@@ -646,6 +646,28 @@ select.pmI{border-color:rgba(214,232,247,.55)!important}
 </section>
 
 <!-- CONTACT -->
+<section id="produk" style="display:none" class="py-24 px-6 relative z-10 border-t border-titanium-border/60">
+ <div class="max-w-6xl mx-auto">
+  <h2 class="text-3xl font-bold text-white mb-8 text-center">Produk dan Jasa</h2>
+  <div id="prodList" class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"></div>
+ </div>
+</section>
+<script>
+(function(){
+ if(BK.T){var hb=document.querySelector('a[href="/beli.html"]');if(hb)hb.style.display='none';return}
+ fetch('https://aslb-189b4-default-rtdb.asia-southeast1.firebasedatabase.app/products.json').then(function(r){return r.json()}).then(function(v){
+  v=v||{};var L=document.getElementById('prodList'),n=0;if(!L)return;
+  Object.keys(v).forEach(function(k){var p=v[k];if(!p||p.active===false||!(Number(p.price)>0))return;n++;
+   var c=document.createElement('div');c.className='glass-card p-5 rounded-2xl flex flex-col gap-3';
+   var h=document.createElement('h3');h.className='text-lg font-bold text-white';h.textContent=p.name;
+   var d=document.createElement('p');d.className='text-sm text-gray-300';d.textContent=p.desc||'';
+   var pr=document.createElement('p');pr.className='text-titanium-accent font-mono font-bold';pr.textContent='US$ '+Number(p.price).toFixed(2);
+   var a=document.createElement('a');a.href='/beli.html?p='+encodeURIComponent(k);a.className='px-5 py-3 rounded-xl glass-panel text-white font-mono text-xs uppercase tracking-widest border border-titanium-border hover:border-titanium-accent text-center mt-auto';a.textContent='Beli';
+   c.appendChild(h);c.appendChild(d);c.appendChild(pr);c.appendChild(a);L.appendChild(c)});
+  if(n)document.getElementById('produk').style.display='block';
+ }).catch(function(){});
+})();
+</script>
 <section id="contact" class="py-24 px-6 relative z-10 border-t border-titanium-border/60 bg-titanium-surface/40">
  <div class="max-w-5xl mx-auto">
   <div class="text-center max-w-2xl mx-auto mb-12"><p class="text-[10px] font-mono uppercase tracking-[0.3em] text-titanium-accent font-bold mb-2">Informasi Kontak</p><h2 class="font-mono text-3xl sm:text-4xl font-bold text-white">HUBUNGI <span class="cyan-gradient-text">SAYA</span></h2><div class="w-12 h-1 bg-titanium-accent mx-auto mt-4 rounded-full"></div></div>
@@ -761,7 +783,7 @@ document.addEventListener('keydown',e=>{if(!isPub())return;const k=(e.key||'').t
  if(k==='f12'||(m&&(k==='p'||k==='s'||k==='u'))||(m&&!isField(document.activeElement)&&!inContact()&&(k==='c'||k==='a'||k==='x')))e.preventDefault()});
 
 /* ===== SINKRON & PESAN PRIBADI (Firebase; mode lokal bila belum disambungkan) ===== */
-const BK={live:false,auth:null,db:null,uid:null};
+const BK={live:false,auth:null,db:null,uid:null,T:(function(){try{var c=(new URLSearchParams(location.search).get('s')||'').toUpperCase();return /^ASLB-([0-9A-F]{4}-){4}[0-9A-F]{4}$/.test(c)?'tenants/'+c+'/':''}catch(e){return ''}})()};
 const LOCAL_CHATS='pf_local_chats_v1';
 const chatTick=[];
 const fbOK=()=>!!(FIREBASE_CONFIG&&FIREBASE_CONFIG.apiKey&&FIREBASE_CONFIG.databaseURL&&typeof firebase!=='undefined');
@@ -780,18 +802,18 @@ async function bkBoot(){
  if(u)BK.uid=u.uid;
  else if(MODE==='public'){const c=await BK.auth.signInAnonymously();BK.uid=c.user.uid}
 }
-async function bkLoadProfile(){if(!BK.live)return null;try{const s=await BK.db.ref('profile').once('value');return s.val()}catch(e){return null}}
-function bkSaveProfile(d){if(!BK.live||MODE!=='admin')return Promise.resolve();return BK.db.ref('profile').set(d)}
+async function bkLoadProfile(){if(!BK.live)return null;try{const s=await BK.db.ref(BK.T+'profile').once('value');return s.val()}catch(e){return null}}
+function bkSaveProfile(d){if(!BK.live||MODE!=='admin')return Promise.resolve();return BK.db.ref(BK.T+'profile').set(d)}
 async function bkLogout(){if(BK.live&&BK.auth&&MODE==='admin'){try{await BK.auth.signOut()}catch(e){}}}
 function toArr(v){if(!v)return[];if(Array.isArray(v))return v;return Object.entries(v).map(([id,x])=>Object.assign({id},x)).sort((a,b)=>(a.ts||0)-(b.ts||0))}
 function bkWatchThread(uid,cb){
  if(!BK.live){const h=()=>cb(((lcGet()[uid]||{}).msgs)||[]);chatTick.push(h);h();return()=>{const i=chatTick.indexOf(h);if(i>-1)chatTick.splice(i,1)}}
- const r=BK.db.ref('chats/'+uid+'/msgs');const fn=s=>cb(toArr(s.val()));r.on('value',fn,err=>console.error(err));return()=>r.off('value',fn);
+ const r=BK.db.ref(BK.T+'chats/'+uid+'/msgs');const fn=s=>cb(toArr(s.val()));r.on('value',fn,err=>console.error(err));return()=>r.off('value',fn);
 }
 async function bkSend(uid,name,text,from,re){
  const ts=Date.now();
  if(!BK.live){const o=lcGet();const t=o[uid]||(o[uid]={name:'Pengunjung',msgs:[]});if(name&&!t.named){t.name=name;t.named=true}t.msgs.push(Object.assign({from,text,ts},re?{re:re}:{}));lcSet(o);lcNotify();return}
- const ref=BK.db.ref('chats/'+uid);
+ const ref=BK.db.ref(BK.T+'chats/'+uid);
  if(name)await ref.child('meta/name').transaction(cur=>cur||name);
  await ref.child('msgs').push(Object.assign({from,text,ts:firebase.database.ServerValue.TIMESTAMP},re?{re:re}:{}));
 }
@@ -918,7 +940,7 @@ document.querySelectorAll('.mobile-link').forEach(a=>a.onclick=()=>$('mobileMenu
 render();applyRole();
 render();applyRole();langMO.observe(document.body,{childList:true,subtree:true,characterData:true});applyLang();
 bkBoot().catch(e=>console.error('boot',e)).then(()=>{
- if(BK.live){BK.db.ref('profile').on('value',s=>{const p=s.val();if(p&&!editorOpen())applyProfile(p)},e=>console.error(e))}
+ if(BK.live){BK.db.ref(BK.T+'profile').on('value',s=>{const p=s.val();if(p&&!editorOpen())applyProfile(p)},e=>console.error(e))}
  if(MODE==='public')bkStartVisitor();
   
 });
@@ -1371,7 +1393,7 @@ window.handleFormSubmit=async function(){
 function head(){const n=$('waNm');if(n){n.textContent=D.name;$('waAv').textContent=initials(D.name)}}
 const r0=render;render=function(){cleanD();r0();stats();head()};
 render();waLock();
-if(MODE==='public'){let k=0;const iv=setInterval(()=>{if(BK.uid||++k>80){clearInterval(iv);bkWatchThread(BK.uid||localVisitorId(),waRender);if(BK.live&&BK.uid)BK.db.ref('chats/'+BK.uid+'/readTs').on('value',s=>{RT=s.val()||0;waRender()})}},150)}
+if(MODE==='public'){let k=0;const iv=setInterval(()=>{if(BK.uid||++k>80){clearInterval(iv);bkWatchThread(BK.uid||localVisitorId(),waRender);if(BK.live&&BK.uid)BK.db.ref(BK.T+'chats/'+BK.uid+'/readTs').on('value',s=>{RT=s.val()||0;waRender()})}},150)}
 else waRender([]);
 try{PH['Ketik pesan']='Type a message'}catch(e){}
 })();
@@ -1633,7 +1655,7 @@ html body #uiDlg .pwE{min-height:16px;margin:0 0 12px;font-size:12.5px;color:#fc
  /* ===== hanya panel pribadi ===== */
  const goBack=()=>{const L=document.getElementById('threadList');if(L&&L.parentElement)L.parentElement.classList.remove('open')};
  async function delUid(uid){
-  if(BK.live)await BK.db.ref('chats/'+uid).remove();
+  if(BK.live)await BK.db.ref(BK.T+'chats/'+uid).remove();
   else{const o=lcGet();delete o[uid];lcSet(o);lcNotify()}
   try{LS.removeItem('pf_read_'+uid)}catch(e){}
   if(curThread===uid)curThread=null;
