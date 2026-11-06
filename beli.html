@@ -13,6 +13,7 @@ button{padding:10px 18px;border-radius:12px;border:1px solid #38bdf8;background:
 <label for="n">Nama lengkap</label><input id="n" maxlength="80" autocomplete="name">
 <label for="e">Email</label><input id="e" type="email" maxlength="120" autocomplete="email">
 <div id="pp"></div><div id="msg"></div>
+<button id="bt" type="button" style="margin-top:14px">← Batal, kembali</button>
 <div id="done"><b>Pembayaran berhasil.</b><span id="code"></span><button id="cp" type="button">Salin kode</button><p style="margin-top:12px">Simpan kode ini sebagai bukti pembelian dan kunci akses.</p></div>
 </main>
 <script>
@@ -22,12 +23,13 @@ const say=(t,bad)=>{$('msg').textContent=t;$('msg').style.color=bad?'#fca5a5':'#
 const ok=()=>$('n').value.trim().length>1&&/^\S+@\S+\.\S+$/.test($('e').value.trim());
 const show=()=>{const p=P[$('s').value];$('ds').textContent=p?('US$ '+Number(p.price).toFixed(2)+(p.desc?' - '+p.desc:'')):''};
 $('s').onchange=show;
+$('bt').onclick=()=>{try{if(history.length>1&&document.referrer&&new URL(document.referrer).origin===location.origin){history.back();return}}catch(e){}location.href='/'};
 $('cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('code').textContent);$('cp').textContent='Tersalin'};
 (async()=>{
  const [c,pr]=await Promise.all([fetch('/api/config').then(r=>r.json()),fetch(DB+'/products.json').then(r=>r.json())]);
  $('nm').textContent=c.name;
  Object.keys(pr||{}).forEach(k=>{const p=pr[k];if(p&&p.active!==false&&Number(p.price)>0){P[k]=p;const o=document.createElement('option');o.value=k;o.textContent=p.name;$('s').appendChild(o)}});
- if(!Object.keys(P).length){say('Belum ada produk yang dijual.',1);return}
+ if(!Object.keys(P).length){say(pr&&pr.error?'Data ditolak Firebase: '+pr.error:(pr?'Produk ada, tapi tidak aktif atau harganya 0.':'Belum ada produk yang dijual (data /products kosong).'),1);return}
  const q=new URLSearchParams(location.search).get('p');if(q&&P[q])$('s').value=q;show();
  if(!c.clientId)throw 0;
  const s=document.createElement('script');
@@ -37,7 +39,7 @@ $('cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('code'
   createOrder:async()=>{const j=await (await fetch('/api/paypal-create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({productId:$('s').value})})).json();if(!j.id)throw new Error();return j.id},
   onApprove:async d=>{say('Memverifikasi pembayaran...');
    const j=await (await fetch('/api/paypal-capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderID:d.orderID,name:$('n').value.trim(),email:$('e').value.trim()})})).json();
-   if(j.code){$('pp').style.display='none';$('done').style.display='block';$('code').textContent=j.code;say('')}else say(j.error||'Gagal. Simpan nomor pesanan: '+d.orderID,1)},
+   if(j.code){$('bt').style.display='none';$('pp').style.display='none';$('done').style.display='block';$('code').textContent=j.code;say('')}else say(j.error||'Gagal. Simpan nomor pesanan: '+d.orderID,1)},
   onError:()=>say('Pembayaran gagal atau dibatalkan.',1)
  }).render('#pp');
  document.head.appendChild(s);
