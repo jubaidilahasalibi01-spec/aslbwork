@@ -41,7 +41,9 @@ $('cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('code'
  const list=Array.isArray(pj)?pj:Object.values(pj||{});
  list.forEach(x=>{if(!x||!x.t)return;const u=parsePrice(x.price);if(u>0)P['pj:'+x.t]={name:String(x.t),price:u,desc:String(x.d||x.desc||'').slice(0,160)}});
  Object.keys(P).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=P[k].name;$('s').appendChild(o)});
- if(!Object.keys(P).length){say(pr&&pr.error?'Data ditolak Firebase: '+pr.error:'Belum ada produk atau proyek berharga yang dijual.',1);return}
+ if(!Object.keys(P).length){
+  const nPj=list.filter(x=>x&&x.t).length,nPr=pr&&!pr.error?Object.keys(pr).length:0;
+  say(pr&&pr.error?'Data ditolak Firebase: '+pr.error:(pj===null?'Data proyek tidak terbaca. Cek internet lalu muat ulang.':(nPj?'Ada '+nPj+' proyek, tapi belum ada yang punya harga. Isi kolom harga di editor Proyek (admin), lalu simpan.':'Belum ada proyek atau produk yang dijual. Produk terbaca: '+nPr+'.')),1);return}
  const sp=new URLSearchParams(location.search),q=sp.get('p'),pjq=sp.get('pj');
  if(pjq&&P['pj:'+pjq])$('s').value='pj:'+pjq;else if(q&&P[q])$('s').value=q;
  show();
