@@ -939,10 +939,10 @@ document.querySelectorAll('.mobile-link').forEach(a=>a.onclick=()=>$('mobileMenu
  const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.08});els.forEach(e=>io.observe(e))})();
 render();applyRole();
 render();applyRole();langMO.observe(document.body,{childList:true,subtree:true,characterData:true});applyLang();
-bkBoot().catch(e=>console.error('boot',e)).then(()=>{
- if(BK.live){BK.db.ref(BK.T+'profile').on('value',s=>{const p=s.val();if(p&&!editorOpen())applyProfile(p)},e=>console.error(e))}
+window.__BK_READY=bkBoot().catch(e=>{BK.bootError=e;console.error('Firebase initialization failed:',e)}).then(()=>{
+ if(BK.live&&BK.db){BK.db.ref(BK.T+'profile').on('value',s=>{const p=s.val();if(p&&!editorOpen())applyProfile(p)},e=>console.error('Profile listener:',e))}
  if(MODE==='public')bkStartVisitor();
-  
+ return BK;
 });
 
 /* ===== SIDEBAR (garis tiga) ===== */
@@ -2576,6 +2576,61 @@ if(typeof drawLists==='function'){const r=drawLists;drawLists=function(){const v
 setTimeout(()=>{try{addBtns()}catch(e){}},800);
 })();
 
+</script>
+<script id="aslb-message-reliability">
+(function(){
+  'use strict';
+  let sending=false,lastSentAt=0;
+  function el(id){return document.getElementById(id)}
+  function status(message,ok){
+    let n=el('messageSendStatus');
+    const host=el('contactBox')||el('chatLogWrap')||el('sendBtn')?.parentElement;
+    if(!n&&host){n=document.createElement('p');n.id='messageSendStatus';n.setAttribute('role','status');n.setAttribute('aria-live','polite');n.style.cssText='font:12px/1.5 sans-serif;margin:8px 0;color:'+(ok?'#86efac':'#fca5a5');host.appendChild(n)}
+    if(n){n.textContent=message;n.style.color=ok?'#86efac':'#fca5a5'}
+  }
+  window.handleFormSubmit=async function(){
+    if(MODE==='admin'){alert('Ini hanya pratinjau. Untuk mengirim pesan, buka website publik.');return}
+    const btn=el('sendBtn'),field=el('chatText');
+    if(sending)return;
+    if(!field){status('Kolom pesan tidak ditemukan. Muat ulang halaman.',false);return}
+    const text=(field.value||'').trim();
+    if(!text){status('Tulis pesan terlebih dahulu.',false);field.focus();return}
+    const honeypot=el('waHp');
+    if(honeypot&&honeypot.value.trim()){status('Pengiriman ditolak oleh pemeriksaan keamanan. Kosongkan kolom dan muat ulang halaman.',false);return}
+    const nameSaved=LS.getItem('pf_visitor_name')||'';
+    const emailSaved=LS.getItem('pf_visitor_email')||'';
+    let name=nameSaved,email=emailSaved;
+    if(!name){const n=el('chatName');name=(n?.value||'').trim().slice(0,60);if(!name){status('Isi nama atau perusahaan terlebih dahulu.',false);n?.focus();return}}
+    if(!email){const e=el('chatEmail');email=(e?.value||'').trim().slice(0,120);if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){status('Masukkan alamat email yang valid.',false);e?.focus();return}}
+    if(Date.now()-lastSentAt<1800){status('Tunggu sebentar sebelum mengirim pesan berikutnya.',false);return}
+    sending=true;if(btn)btn.disabled=true;status('Menghubungkan ke server…',true);
+    try{
+      if(window.__BK_READY)await window.__BK_READY;
+      if(BK.bootError)throw BK.bootError;
+      if(!BK.live||!BK.auth||!BK.auth.currentUser||!BK.auth.currentUser.uid){throw new Error('Autentikasi Firebase belum siap. Aktifkan Anonymous di Firebase Authentication lalu muat ulang website.')}
+      const uid=BK.auth.currentUser.uid;
+      BK.uid=uid;
+      const subject=el('chatSubject')?.value||'Pesan portofolio';
+      const first=!nameSaved;
+      const message=(first?'['+subject+'] ':'')+text+(first?'\n✉ '+email:'');
+      await bkSend(uid,name,message,'visitor');
+      LS.setItem('pf_visitor_name',name);LS.setItem('pf_visitor_email',email);
+      field.value='';field.style.height='auto';lastSentAt=Date.now();
+      if(typeof waLock==='function')waLock();
+      if(typeof lockFields==='function')lockFields();
+      status('Pesan berhasil dikirim. Terima kasih, pesan akan masuk ke pemilik portofolio.',true);
+    }catch(err){
+      console.error('Message send failed:',err);
+      status('Pesan belum terkirim: '+(err&&err.message?err.message:'Kesalahan koneksi Firebase'),false);
+    }finally{sending=false;if(btn)btn.disabled=false}
+  };
+  document.addEventListener('click',function(e){
+    const b=e.target&&e.target.closest&&e.target.closest('#sendBtn');
+    if(!b)return;
+    if(b.getAttribute('onclick'))return;
+    e.preventDefault();window.handleFormSubmit();
+  },true);
+})();
 </script>
 </body>
 </html>
