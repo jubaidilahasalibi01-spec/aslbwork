@@ -2295,12 +2295,12 @@ function nt(P,k){const en=P.lang==='en',c=(P.catT||P.cat).toLowerCase(),j=(a,w)=
  return en?'Do not wait. Visit '+(P.host||'the project page')+' and start using '+P.t+' today. Thank you.':'Jangan tunggu lagi. Kunjungi '+(P.host||'halaman proyek')+', dan mulai gunakan '+P.t+' hari ini. Terima kasih.'}
 const _plan0=plan0;
 function plan(p){const P=_plan0(p);P.lang=AL.lang;P.sc.forEach(s=>{s.txt=nt(P,s.k)});return P}
-function voices(){const v=(window.speechSynthesis&&speechSynthesis.getVoices())||[],pre=AL.lang==='en'?/^en/i:/^id/i;const l=v.filter(x=>pre.test(x.lang)||(AL.lang==='id'&&/indones/i.test(x.name)));
+function voices(){const v=(window.speechSynthesis&&speechSynthesis.getVoices())||[],pre=AL.lang==='en'?/^en/i:/^id/i;let l=v.filter(x=>pre.test(x.lang)||(AL.lang==='id'&&/indones/i.test(x.name)));if(!l.length&&AL.lang==='id')l=v.filter(x=>/^ms/i.test(x.lang));if(!l.length)l=v.slice();
  const sc=x=>(/natural|neural|online/i.test(x.name)?6:0)+(/enhanced|premium|siri/i.test(x.name)?4:0)+(/google/i.test(x.name)?3:0)+(/(en-US|en-GB|en-AU)/i.test(x.lang)&&AL.lang==='en'?1:0)+(x.localService?0:1);
  return l.sort((a,b)=>sc(b)-sc(a))}
 function speakPlan(P){const ss=window.speechSynthesis;if(!ss||!AL.on)return()=>{};try{ss.cancel()}catch(e){}
- const vl=voices(),v=vl.length?vl[AL.vi%vl.length]:null,tm=[];let a=0;
- P.sc.forEach(s=>{const at=a;tm.push(setTimeout(()=>{try{String(s.txt).split(/(?<=[.!?])\s+/).filter(Boolean).forEach(t=>{const u=new SpeechSynthesisUtterance(t);u.lang=P.lang==='en'?'en-US':'id-ID';u.rate=.97;u.pitch=1.02;if(v){u.voice=v;u.lang=v.lang}ss.speak(u)})}catch(e){}},(at+.3)*1000));a+=s.d});
+ const tm=[];let a=0;try{ss.resume()}catch(e){}
+ P.sc.forEach(s=>{const at=a;tm.push(setTimeout(()=>{try{const vl=voices(),v=vl.length?vl[AL.vi%vl.length]:null;String(s.txt).split(/(?<=[.!?])\s+/).filter(Boolean).forEach(t=>{const u=new SpeechSynthesisUtterance(t);u.lang=P.lang==='en'?'en-US':'id-ID';u.rate=.97;u.pitch=1.02;u.volume=1;if(v){u.voice=v;u.lang=v.lang}ss.speak(u)})}catch(e){}},(at+.3)*1000));a+=s.d});
  return()=>{tm.forEach(clearTimeout);try{ss.cancel()}catch(e){}}}
 const rr=(g,x,y,w,h,r)=>{g.beginPath();g.roundRect(x,y,w,h,r)};
 function glass(g,x,y,w,h,r,a){rr(g,x,y,w,h,r);g.fillStyle='rgba(255,255,255,'+(a||.07)+')';g.fill();g.strokeStyle='rgba(138,240,255,.35)';g.lineWidth=1.5;g.stroke()}
