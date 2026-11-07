@@ -2139,6 +2139,12 @@ try{var ob=bkSend;bkSend=function(uid,name,text,from,re){
 .pfBuy{width:100%;height:44px;border-radius:10px;border:0;font-weight:700;font-size:13px;color:#04131f;background:linear-gradient(135deg,#7de6f7,#38bdf8);cursor:pointer}
 .pfCopy{margin:22px auto 6px;max-width:560px;text-align:center;font-size:10px;line-height:1.6;color:rgba(207,227,242,.62);letter-spacing:.02em}
 </style>
+<style id="pfCardCss">
+.pfPrice{margin-top:14px}
+.pfBuy{height:48px!important;font-size:14px!important;letter-spacing:.3px}
+.pfAsk{display:block;width:100%;margin-top:8px;background:none;border:0;color:#9fd8f0;font-size:12px;cursor:pointer;text-decoration:underline}
+.pjc .pjBt a,.pjc .pjBt button{background:transparent!important;border:1px solid rgba(125,211,252,.22)!important;color:#bcd9ec!important;font-weight:500!important;font-size:12px!important;min-height:34px!important;box-shadow:none!important}
+</style>
 <script id="prjJs">
 (function(){
 /* ===== proyek serba-guna: jenis proyek, video iklan otomatis, harga US$ + perkiraan mata uang lokal ===== */
@@ -2188,7 +2194,7 @@ window.pfLocalPrice=function(usd,cur){return localStr(usd,cur)};
 function curName(c){try{return new Intl.DisplayNames([navigator.language||'en'],{type:'currency'}).of(c)||c}catch(e){return c}}
 function curOpts(sel){var l=LIST.slice();if(l.indexOf(sel)<0)l.unshift(sel);return l.map(function(c){return'<option value="'+c+'"'+(c===sel?' selected':'')+'>'+c+' — '+E(curName(c))+'</option>'}).join('')}
 function priceHTML(usd){var cur=getCur(),loc=localStr(usd,cur);
- return'<div class="pfPrice" data-pf="1" data-usd="'+usd+'"><div class="pfAmt"><span class="pfUsd">US$'+fmtUsd(usd)+'</span><span class="pfLoc">'+(loc?'≈ '+E(loc):'')+'</span></div><label class="pfCurL">Tampilkan dalam <select class="pfCur" aria-label="Mata uang">'+curOpts(cur)+'</select></label><small>Harga resmi tetap <b>US$'+fmtUsd(usd)+'</b> di seluruh dunia. Nilai di mata uang lain hanya perkiraan kurs hari ini.</small><button type="button" class="pfBuy">Beli / Tanya proyek ini</button></div>'}
+ return'<div class="pfPrice" data-pf="1" data-usd="'+usd+'"><div class="pfAmt"><span class="pfUsd">US$'+fmtUsd(usd)+'</span><span class="pfLoc">'+(loc?'≈ '+E(loc):'')+'</span></div><label class="pfCurL">Tampilkan dalam <select class="pfCur" aria-label="Mata uang">'+curOpts(cur)+'</select></label><small>Harga resmi tetap <b>US$'+fmtUsd(usd)+'</b> di seluruh dunia. Nilai di mata uang lain hanya perkiraan kurs hari ini.</small><button type="button" class="pfBuy">Beli sekarang</button><button type="button" class="pfAsk">Tanya dulu lewat chat</button></div>'}
 function refreshPrices(){var cur=getCur();document.querySelectorAll('.pfPrice').forEach(function(p){var usd=+p.getAttribute('data-usd'),l=localStr(usd,cur),e=p.querySelector('.pfLoc'),s=p.querySelector('.pfCur');if(e)e.textContent=l?'≈ '+l:'';if(s&&s.value!==cur){if(![].some.call(s.options,function(o){return o.value===cur}))s.insertAdjacentHTML('afterbegin','<option value="'+cur+'">'+cur+' — '+E(curName(cur))+'</option>');s.value=cur}})}
 /* --- kartu proyek --- */
 function posterOf(x,v){var u=String(x.img||'');if(/^(data:image\/|https:\/\/)/i.test(u))return u;return v.t==='yt'?'https://i.ytimg.com/vi/'+v.id+'/hqdefault.jpg':''}
@@ -2210,15 +2216,16 @@ function aug(){
     if(th){th.style.display='none';th.insertAdjacentElement('beforebegin',media)}else c.insertBefore(media,c.firstChild)}
    else if(v&&v.t==='link'){var a=document.createElement('a');a.className='pfWatch';a.setAttribute('data-pf','1');a.target='_blank';a.rel='noopener noreferrer';a.href=v.url;a.textContent='▶ Tonton video iklan ↗';(th||c.firstChild).insertAdjacentElement('afterend',a);media=a}
    var usd=parsePrice(x.price);
-   if(usd){var tmp=document.createElement('div');tmp.innerHTML=priceHTML(usd);var pe=tmp.firstChild,ref=media||th;if(ref)ref.insertAdjacentElement('afterend',pe);else c.insertBefore(pe,c.firstChild)}
+   if(usd){var tmp=document.createElement('div');tmp.innerHTML=priceHTML(usd);var pe=tmp.firstChild,pb=c.querySelector('.pjBt');if(pb)pb.insertAdjacentElement('beforebegin',pe);else c.appendChild(pe)}
    var cat=String(x.cat||'').trim();
    if(cat){var s=document.createElement('span');s.className='pfCat';s.setAttribute('data-pf','1');s.textContent=cat.slice(0,30);var h3=c.querySelector('h3');if(h3)h3.insertAdjacentElement('beforebegin',s)}}
   if(neo){var bt=c.querySelector('.pjBt');if(bt){bt.querySelectorAll('a.off').forEach(function(n){n.remove()});if(!bt.children.length)bt.remove()}}})}
 setInterval(aug,1000);
 document.addEventListener('change',function(e){var s=e.target;if(s&&s.classList&&s.classList.contains('pfCur')){try{localStorage.setItem('pf_cur',s.value)}catch(_){}refreshPrices()}});
 document.addEventListener('click',function(e){
- var b=e.target.closest&&e.target.closest('.pfBuy');if(!b)return;
+ var b=e.target.closest&&e.target.closest('.pfBuy,.pfAsk');if(!b)return;
  var c=b.closest('.pjc'),i=[].indexOf.call(c.parentNode.children,c),x=(D.projects||[])[i]||{},usd=parsePrice(x.price);
+ if(b.classList.contains('pfBuy')&&usd&&x.t){location.href='/beli.html?pj='+encodeURIComponent(String(x.t).slice(0,100));return}
  var msg='Halo, saya tertarik dengan proyek "'+String(x.t||'').slice(0,80)+'"'+(usd?' (harga US$'+fmtUsd(usd,1)+')':'')+'. Mohon info cara pembeliannya.';
  showView('contact');setTimeout(function(){var t=$('chatText');if(t){t.value=msg.slice(0,780);t.dispatchEvent(new Event('input',{bubbles:true}));try{t.focus()}catch(_){}}},400)});
 loadFx(function(){refreshPrices()});setInterval(function(){loadFx(refreshPrices)},36e5);
@@ -2395,7 +2402,7 @@ function open(p){
 try{window.speechSynthesis&&speechSynthesis.getVoices();window.speechSynthesis&&(speechSynthesis.onvoiceschanged=()=>{})}catch(e){}
 window.AD={open};
 const css='margin-top:8px;padding:8px 14px;border-radius:10px;border:1px solid rgba(56,189,248,.5);background:rgba(56,189,248,.12);color:#8af0ff;font-weight:600;cursor:pointer;font-size:12px';
-function mk(fn){const b=document.createElement('button');b.type='button';b.className='adBtn';b.style.cssText=css;b.textContent='🎬 Video Iklan Otomatis';b.onclick=fn;return b}
+function mk(fn){const b=document.createElement('button');b.type='button';b.className='adBtn';b.style.cssText=css;b.textContent='▶ Tonton Video';b.onclick=fn;return b}
 function addBtns(){
  if(typeof D==='undefined')return;
  document.querySelectorAll('#displayProjectsGrid .pjc').forEach((c,i)=>{const x=D.projects[i];if(x&&!x.video&&!c.querySelector('.adBtn'))c.appendChild(mk(()=>open(x)))});

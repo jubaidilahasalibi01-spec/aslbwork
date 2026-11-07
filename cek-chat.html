@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cek Pesan</title>
+<style>body{margin:0;padding:20px;background:#050b18;color:#e6f6ff;font:15px/1.5 system-ui,sans-serif}h1{font-size:20px}h2{font-size:16px;margin:22px 0 6px}.r{padding:8px 0;border-bottom:1px solid #1e3a5f;word-break:break-word}.ok{color:#6ee7b7}.no{color:#fca5a5}input{width:100%;box-sizing:border-box;padding:11px;margin:6px 0;border-radius:12px;border:1px solid #38bdf8;background:#0b1730;color:#fff;font-size:15px}button{margin-top:8px;padding:10px 18px;border-radius:12px;border:1px solid #38bdf8;background:transparent;color:#e6f6ff;font-size:15px}</style></head><body>
+<h1>Cek Pesan Masuk</h1>
+<h2>Tes 1: kirim pesan sebagai pengunjung</h2><button id="b1" type="button">Jalankan tes 1</button><div id="o1"></div>
+<h2>Tes 2: baca semua pesan sebagai admin</h2>
+<input id="pw" type="password" placeholder="Kata sandi admin (akun Firebase)" autocomplete="current-password"><button id="b2" type="button">Jalankan tes 2</button><div id="o2"></div>
+<button id="cp" type="button" style="margin-top:22px">Salin semua hasil</button>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const CFG={apiKey:'AIzaSyCd3OEcXD5MCjEGfbVxwX3SagmMbFF-fc0',authDomain:'aslb-189b4.firebaseapp.com',databaseURL:'https://aslb-189b4-default-rtdb.asia-southeast1.firebasedatabase.app',projectId:'aslb-189b4',appId:'1:28348072066:web:eda232f21a9669eb35f49b'};
+const OWNER='jubaidilahasalibi01@gmail.com',log=[];
+const $=i=>document.getElementById(i);
+function add(box,ok,t){log.push((ok?'OK  ':'GAGAL ')+t);const d=document.createElement('div');d.className='r '+(ok?'ok':'no');d.textContent=(ok?'✓ ':'✗ ')+t;$(box).appendChild(d)}
+function init(){if(!firebase.apps.length)firebase.initializeApp(CFG);return{auth:firebase.auth(),db:firebase.database()}}
+$('cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(location.host+'\n'+log.join('\n'));$('cp').textContent='Tersalin'};
+$('b1').onclick=async()=>{$('o1').textContent='';
+ if(typeof firebase==='undefined'){add('o1',false,'Skrip Firebase tidak termuat');return}
+ const {auth,db}=init();let u;
+ try{await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);u=auth.currentUser;if(!u||u.email){await auth.signOut();u=(await auth.signInAnonymously()).user}add('o1',true,'Login pengunjung (anonim) berhasil')}catch(e){add('o1',false,'Login anonim gagal: '+(e.code||e.message));return}
+ const ref=db.ref('chats/'+u.uid);
+ try{await ref.child('meta/name').transaction(c=>c||'TES KONEKSI');await ref.child('msgs').push({from:'visitor',text:'tes koneksi '+new Date().toLocaleTimeString(),ts:firebase.database.ServerValue.TIMESTAMP});add('o1',true,'Pesan tes berhasil tersimpan di Firebase')}catch(e){add('o1',false,'Gagal menyimpan pesan: '+(e.code||e.message));return}
+ try{const s=await ref.child('msgs').get();add('o1',s.exists(),'Pesan terbaca kembali oleh pengunjung: '+(s.exists()?Object.keys(s.val()).length+' pesan':'kosong'))}catch(e){add('o1',false,'Gagal membaca kembali: '+(e.code||e.message))}
+};
+$('b2').onclick=async()=>{$('o2').textContent='';
+ if(typeof firebase==='undefined'){add('o2',false,'Skrip Firebase tidak termuat');return}
+ const {auth,db}=init();
+ try{await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);await auth.signInWithEmailAndPassword(OWNER,$('pw').value);$('pw').value='';add('o2',true,'Login admin ke Firebase berhasil')}catch(e){add('o2',false,'Login admin gagal: '+(e.code||e.message));return}
+ try{const s=await db.ref('chats').get(),v=s.val()||{},k=Object.keys(v);add('o2',k.length>0,'Percakapan di Firebase: '+k.length);
+  k.forEach(id=>{const t=v[id]||{},n=t.msgs?Object.keys(t.msgs).length:0;add('o2',n>0,'Percakapan '+id.slice(0,6)+'... nama "'+((t.meta&&t.meta.name)||'-')+'", '+n+' pesan')})}
+ catch(e){add('o2',false,'Admin tidak boleh membaca pesan: '+(e.code||e.message))}
+};
+</script></body></html>
