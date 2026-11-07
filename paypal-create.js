@@ -1,6 +1,6 @@
 const {admin,pp,parsePrice,findProject}=require('./_lib');
 module.exports=async(req,res)=>{
- if(req.method!=='POST')return res.status(405).end();
+ if(req.method!=='POST')return res.status(405).json({error:'Method not allowed'});
  const b=req.body||{};
  try{
   let cid,name,price;
@@ -15,7 +15,26 @@ module.exports=async(req,res)=>{
    if(!p||!(Number(p.price)>0)||p.active===false)return res.status(404).json({error:'Produk tidak ditemukan.'});
    cid=id;name=String(p.name);price=Number(p.price);
   }
-  const o=await pp('/v2/checkout/orders','POST',{intent:'CAPTURE',purchase_units:[{custom_id:cid,description:name.slice(0,120),amount:{currency_code:'USD',value:price.toFixed(2)}}]});
+  
+  // Memanggil API PayPal dengan penangkap error yang jelas
+  const o=await pp('/v2/checkout/orders','POST',{
+   intent:'CAPTURE',
+   purchase_units:[{
+    custom_id:cid,
+    description:name.slice(0,120),
+    amount:{currency_code:'USD',value:price.toFixed(2)}
+   }]
+  });
+  
+  if(!o || !o.id) {
+   console.error('PayPal API Error Response:', o);
+   return res.status(500).json({error:'Gagal membuat pesanan ke PayPal. Cek Client ID/Secret.'});
+  }
+
   res.json({id:o.id});
- }catch(e){res.status(500).json({error:'Gagal membuat pesanan.'})}
+ }catch(e){
+  console.error('Server PayPal Create Error:', e);
+  res.status(500).json({error:'Terjadi kesalahan server saat menghubungi PayPal.'});
+ }
 };
+                                       
