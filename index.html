@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id" translate="no" class="scroll-smooth dark">
 <head>
-<meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://translate.googleapis.com https://api.mymemory.translated.net https://open.er-api.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; media-src 'self' https: blob: data:; object-src 'none'; base-uri 'none'; form-action 'self'"><meta name="referrer" content="no-referrer"><meta name="google" content="notranslate"><meta http-equiv="Content-Language" content="id"><meta name="color-scheme" content="dark"><meta name="robots" content="noai, noimageai"><meta name="copyright" content="Jubaidilah Asalibi">
+<meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://translate.googleapis.com https://api.mymemory.translated.net https://open.er-api.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; media-src 'self' https: blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="referrer" content="no-referrer"><meta name="google" content="notranslate"><meta http-equiv="Content-Language" content="id"><meta name="color-scheme" content="dark"><meta name="robots" content="noai, noimageai"><meta name="copyright" content="Jubaidilah Asalibi">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Portofolio Jubaidilah Asalibi - profil, keahlian, hasil proyek, dan penghargaan.">
 <meta name="theme-color" content="#0B0F17">
@@ -273,7 +273,7 @@ select.pmI option{background:#0b1626;color:#fff}
 textarea.pmI{height:auto;min-height:150px;padding:14px 20px;border-radius:22px;resize:none;line-height:1.5}
 .pmI.lk{opacity:.7;border-style:dashed}
 .pmSend{display:flex;align-items:center;justify-content:center;gap:10px;height:52px;border-radius:26px;border:0;background:linear-gradient(90deg,#4fe0f5,#d8eefc);color:#06202e;font-weight:700;font-size:16px;box-shadow:0 6px 22px rgba(56,189,248,.35)}
-.pmSend:disabled{opacity:.6}.pmNote{display:none!important;/* pesan status lama disembunyikan */display:flex;gap:8px;color:#b6c4d8;font-size:13px;line-height:1.5;margin:0}.pmNote.hidden,#chatLogWrap.hidden{display:none}
+.pmSend:disabled{opacity:.6}.pmNote{display:flex;gap:8px;color:#b6c4d8;font-size:13px;line-height:1.5;margin:0}.pmNote.hidden,#chatLogWrap.hidden{display:none}
 .pmSub{color:#7dd3fc;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:6px 0}
 </style>
 <style id="skin8">#gatewayScreen.hidden,.hidden#gatewayScreen{display:none!important}</style>
@@ -795,15 +795,12 @@ window.addEventListener('storage',e=>{if(e.key===LOCAL_CHATS)lcNotify()});
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue&&MODE==='public'){try{applyProfile(JSON.parse(e.newValue))}catch(x){}}});
 async function bkBoot(){
  if(!fbOK()){BK.live=false;BK.uid=localVisitorId();return}
- try{
-  if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
-  BK.auth=firebase.auth();BK.db=firebase.database();
-  await BK.auth.setPersistence(MODE==='admin'?firebase.auth.Auth.Persistence.SESSION:firebase.auth.Auth.Persistence.LOCAL);
-  const u=await new Promise((resolve,reject)=>{let done=false;const un=BK.auth.onAuthStateChanged(x=>{if(!done){done=true;un();resolve(x)}},e=>{if(!done){done=true;un();reject(e)}})});
-  if(u)BK.uid=u.uid;
-  else if(MODE==='public'){const c=await BK.auth.signInAnonymously();BK.uid=c.user.uid}
-  BK.live=true;window.__fbBootFailed=false;
- }catch(e){BK.live=false;BK.auth=null;BK.db=null;BK.uid=localVisitorId();window.__fbBootFailed=true;window.__chatErr=(e&&e.code)||'firebase/boot-failed';throw e}
+ if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+ BK.live=true;BK.auth=firebase.auth();BK.db=firebase.database();
+ await BK.auth.setPersistence(MODE==='admin'?firebase.auth.Auth.Persistence.SESSION:firebase.auth.Auth.Persistence.LOCAL);
+ const u=await new Promise(res=>{const un=BK.auth.onAuthStateChanged(x=>{un();res(x)})});
+ if(u)BK.uid=u.uid;
+ else if(MODE==='public'){const c=await BK.auth.signInAnonymously();BK.uid=c.user.uid}
 }
 async function bkLoadProfile(){if(!BK.live)return null;try{const s=await BK.db.ref(BK.T+'profile').once('value');return s.val()}catch(e){return null}}
 function bkSaveProfile(d){if(!BK.live||MODE!=='admin')return Promise.resolve();return BK.db.ref(BK.T+'profile').set(d)}
@@ -811,20 +808,14 @@ async function bkLogout(){if(BK.live&&BK.auth&&MODE==='admin'){try{await BK.auth
 function toArr(v){if(!v)return[];if(Array.isArray(v))return v;return Object.entries(v).map(([id,x])=>Object.assign({id},x)).sort((a,b)=>(a.ts||0)-(b.ts||0))}
 function bkWatchThread(uid,cb){
  if(!BK.live){const h=()=>cb(((lcGet()[uid]||{}).msgs)||[]);chatTick.push(h);h();return()=>{const i=chatTick.indexOf(h);if(i>-1)chatTick.splice(i,1)}}
- const r=BK.db.ref(BK.T+'chats/'+uid+'/msgs');
- const fn=s=>{window.__chatErr='';cb(toArr(s.val()))};
- r.on('value',fn,err=>{console.error('chat read',err);window.__chatErr=(err&&err.code)||'permission-denied';cb([])});
- return()=>r.off('value',fn);
+ const r=BK.db.ref(BK.T+'chats/'+uid+'/msgs');const fn=s=>cb(toArr(s.val()));r.on('value',fn,err=>console.error(err));return()=>r.off('value',fn);
 }
 async function bkSend(uid,name,text,from,re){
  const ts=Date.now();
- if(window.__fbBootFailed)throw new Error('Firebase belum tersambung. Muat ulang halaman dan periksa koneksi Firebase.');
- if(!BK.live){const o=lcGet();const t=o[uid]||(o[uid]={name:'Pengunjung',msgs:[]});if(name&&!t.named){t.name=name;t.named=true}const msg=Object.assign({from,text,ts},re?{re:re}:{});t.msgs.push(msg);lcSet(o);lcNotify();return{ts};}
- if(!BK.uid)throw new Error('Sesi pengunjung belum siap. Muat ulang halaman.');
+ if(!BK.live){const o=lcGet();const t=o[uid]||(o[uid]={name:'Pengunjung',msgs:[]});if(name&&!t.named){t.name=name;t.named=true}t.msgs.push(Object.assign({from,text,ts},re?{re:re}:{}));lcSet(o);lcNotify();return}
  const ref=BK.db.ref(BK.T+'chats/'+uid);
  if(name)await ref.child('meta/name').transaction(cur=>cur||name);
- const pushed=await ref.child('msgs').push(Object.assign({from,text,ts:firebase.database.ServerValue.TIMESTAMP},re?{re:re}:{}));
- return{key:pushed.key,ts};
+ await ref.child('msgs').push(Object.assign({from,text,ts:firebase.database.ServerValue.TIMESTAMP},re?{re:re}:{}));
 }
 function fmtTime(ts){return ts?new Date(ts).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}
 /* --- sisi pengunjung --- */
@@ -948,10 +939,10 @@ document.querySelectorAll('.mobile-link').forEach(a=>a.onclick=()=>$('mobileMenu
  const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.08});els.forEach(e=>io.observe(e))})();
 render();applyRole();
 render();applyRole();langMO.observe(document.body,{childList:true,subtree:true,characterData:true});applyLang();
-bkBoot().catch(e=>console.error('boot',e)).then(()=>{
- if(BK.live){BK.db.ref(BK.T+'profile').on('value',s=>{const p=s.val();if(p&&!editorOpen())applyProfile(p)},e=>console.error(e))}
+window.__BK_READY=bkBoot().catch(e=>{BK.bootError=e;console.error('Firebase initialization failed:',e)}).then(()=>{
+ if(BK.live&&BK.db){BK.db.ref(BK.T+'profile').on('value',s=>{const p=s.val();if(p&&!editorOpen())applyProfile(p)},e=>console.error('Profile listener:',e))}
  if(MODE==='public')bkStartVisitor();
-  
+ return BK;
 });
 
 /* ===== SIDEBAR (garis tiga) ===== */
@@ -1314,7 +1305,7 @@ function pvGroup(){
 .waRow{display:flex}.waRow.me{justify-content:flex-end}
 .waB{max-width:82%;padding:7px 10px 5px;border-radius:12px;font-size:14.5px;line-height:1.4;color:#fff;white-space:pre-wrap;overflow-wrap:anywhere}
 .waRow.ow .waB{background:rgba(255,255,255,.12);border:1px solid rgba(205,225,242,.22);border-top-left-radius:3px}
-.waRow.me .waB{background:linear-gradient(135deg,rgba(28,83,133,.94),rgba(12,39,73,.96));border:1px solid rgba(142,202,255,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 5px 18px rgba(15,55,100,.22);border-top-right-radius:3px}
+.waRow.me .waB{background:linear-gradient(135deg,#0f766e,#0d9488);border-top-right-radius:3px}
 .waB i{display:block;text-align:right;font-style:normal;font-size:10.5px;color:rgba(255,255,255,.7);margin-top:2px}.waB u{text-decoration:none;color:#7de8ff}
 .waEmpty{margin:auto;text-align:center;color:#b6c4d8;font-size:13.5px;line-height:1.5}
 .waId{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px 0;background:rgba(7,18,36,.55)}.waId.hidden{display:none}
@@ -1380,7 +1371,7 @@ const tm=t=>t?new Date(t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-d
 window.lockFields=function(){};
 function waLock(){const n=LS.getItem('pf_visitor_name'),e=LS.getItem('pf_visitor_email'),r=$('waId');if(r)r.classList.toggle('hidden',!!(n&&e))}
 let cache=[],RT=0;function waRender(m){if(m)cache=m;else m=cache;if(!BK.live)RT=((lcGet()[BK.uid||localVisitorId()]||{}).read)||0;const el=$('waMsgs');if(!el)return;const near=el.scrollHeight-el.scrollTop-el.clientHeight<90;let h='',last='';
- if(!m.length)h='<p class="waEmpty">'+(window.__fbBootFailed?'Chat belum terhubung. Periksa koneksi Firebase lalu muat ulang halaman.':(window.__chatErr?'Riwayat pesan belum dapat dimuat. Periksa izin Firebase.':'Belum ada pesan. Mulai percakapan di bawah.'))+'</p>';
+ if(!m.length)h='<p class="waEmpty">Belum ada pesan.<br>Tulis pesan pertama Anda di bawah.</p>';
  m.forEach(x=>{const dl=dayLabel(x.ts);if(dl!==last){h+='<div class="waDay"><span>'+esc(dl)+'</span></div>';last=dl}
   const me=x.from==='visitor';let t=String(x.text||'');if(me)t=t.replace(/\n✉ \S+$/,'');
   h+='<div class="waRow '+(me?'me':'ow')+'" data-ts="'+(x.ts||0)+'" data-f="'+esc(x.from)+'"><div class="waB">'+(window.pfQt?pfQt(x.re):'')+esc(t)+'<i>'+tm(x.ts)+(me?(x.ts&&x.ts<=RT?' <u>✓✓</u>':' <s>✓</s>'):'')+'</i></div></div>'});
@@ -1395,12 +1386,9 @@ window.handleFormSubmit=async function(){
  if(!email){email=$('chatEmail').value.trim().slice(0,120);if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('chatEmail').focus();return}}
  const first=!LS.getItem('pf_visitor_name'),txt=(first?'['+$('chatSubject').value+'] ':'')+t+(first?'\n✉ '+email:'');
  const b=$('sendBtn');b.disabled=true;
- try{
-  const saved=await bkSend(BK.uid||localVisitorId(),name,txt,'visitor');last=Date.now();LS.setItem('pf_visitor_name',name);LS.setItem('pf_visitor_email',email);
-  const localMsg={id:saved&&saved.key,from:'visitor',text:txt,ts:(saved&&saved.ts)||Date.now()};
-  if(BK.live&&!cache.some(m=>saved&&saved.key&&m.id===saved.key)){cache=cache.concat(localMsg);waRender(cache)}
-  const x=$('chatText');x.value='';x.style.height='auto';waLock()
- }catch(e){alert('Pesan belum terkirim: '+(e&&e.message?e.message:'Periksa koneksi Firebase.'))}
+ try{await bkSend(BK.uid||localVisitorId(),name,txt,'visitor');last=Date.now();LS.setItem('pf_visitor_name',name);LS.setItem('pf_visitor_email',email);
+  const x=$('chatText');x.value='';x.style.height='auto';waLock()}
+ catch(e){alert('Gagal mengirim. Periksa koneksi lalu coba lagi.')}
  b.disabled=false};
 function head(){const n=$('waNm');if(n){n.textContent=D.name;$('waAv').textContent=initials(D.name)}}
 const r0=render;render=function(){cleanD();r0();stats();head()};
@@ -2431,6 +2419,30 @@ try{console.log('%cHak cipta dilindungi','font:700 16px system-ui;color:#38bdf8'
 /* ===== VIDEO IKLAN OTOMATIS (dibuat dari data proyek, tanpa upload video) ===== */
 (function(){
 const CW=1280,CH=720,FPS=30,FF='"Plus Jakarta Sans",Arial,sans-serif';
+const mkT=(a,b,c,x,l,m,y,rx,rl,gl)=>({a,b,c,x,l,m,y,g:gl,ra:v=>'rgba('+rx+','+v+')',rb:v=>'rgba('+rl+','+v+')'});
+const THEMES=[
+ mkT('#060912','#0a1a33','#0b0f2a','#38BDF8','#8af0ff','#9fdcff','#7c5cff','56,189,248','138,240,255',[['56,189,248',.24],['124,92,255',.2],['14,165,233',.16]]),
+ mkT('#050b1a','#0b1a3a','#0a1230','#E6C068','#F6E7A8','#EBDDAE','#38BDF8','230,192,104','246,231,168',[['230,192,104',.2],['56,189,248',.18],['30,64,175',.22]]),
+ mkT('#04101a','#07242e','#081a2a','#2DD4BF','#99F6E4','#A7F3D0','#38BDF8','45,212,191','153,246,228',[['45,212,191',.22],['56,189,248',.16],['16,185,129',.14]]),
+ mkT('#07061a','#150f36','#0a0f2a','#A78BFA','#DDD6FE','#C4B5FD','#38BDF8','167,139,250','221,214,254',[['167,139,250',.24],['56,189,248',.16],['99,102,241',.18]]),
+ mkT('#050a14','#0c1a30','#0a1224','#93C5FD','#E0F2FE','#BFDBFE','#67E8F9','147,197,253','224,242,254',[['147,197,253',.2],['103,232,249',.16],['59,130,246',.2]]),
+ mkT('#0a0714','#1b1030','#0c1026','#F472B6','#FBCFE8','#F9A8D4','#38BDF8','244,114,182','251,207,232',[['244,114,182',.2],['56,189,248',.18],['168,85,247',.16]])
+];
+let TH=THEMES[0],CURLT=9;
+const X=(P,k,d)=>(P&&P.X&&P.X[P.lang]&&P.X[P.lang][k])||d;
+function setTheme(p){let i=-1;try{i=D.projects.findIndex(x=>x===p||(x&&p&&x.t===p.t))}catch(e){}if(i<0){let h=0;String(p&&p.t||'').split('').forEach(c=>h=(h*31+c.charCodeAt(0))>>>0);i=h}TH=THEMES[i%THEMES.length]}
+let _nz=null;
+function film(g,T,lt){
+ if(!_nz){_nz=document.createElement('canvas');_nz.width=_nz.height=160;const n=_nz.getContext('2d'),im=n.createImageData(160,160);for(let i=0;i<im.data.length;i+=4){const v=Math.random()*255;im.data[i]=v;im.data[i+1]=v;im.data[i+2]=v;im.data[i+3]=24}n.putImageData(im,0,0)}
+ g.save();g.globalAlpha=1;
+ const sx=((T*180)%(CW+500))-250,lk=g.createLinearGradient(sx-160,0,sx+160,CH);lk.addColorStop(0,TH.ra(0));lk.addColorStop(.5,TH.ra(.07));lk.addColorStop(1,TH.ra(0));
+ g.globalCompositeOperation='lighter';g.fillStyle=lk;g.fillRect(0,0,CW,CH);
+ if(lt<.5){const a=1-lt/.5,fl=g.createRadialGradient(CW/2,CH/2,0,CW/2,CH/2,CW*.6);fl.addColorStop(0,TH.rb(.3*a*a));fl.addColorStop(1,TH.rb(0));g.fillStyle=fl;g.fillRect(0,0,CW,CH)}
+ g.globalCompositeOperation='source-over';
+ const ox=Math.floor(Math.random()*160),oy=Math.floor(Math.random()*160);g.save();g.translate(-ox,-oy);g.fillStyle=g.createPattern(_nz,'repeat');g.fillRect(ox,oy,CW,CH);g.restore();
+ g.fillStyle='#000';g.fillRect(0,0,CW,38);g.fillRect(0,CH-38,CW,38);g.fillStyle=TH.ra(.35);g.fillRect(0,38,CW,1);g.fillRect(0,CH-39,CW,1);
+ g.restore()}
+
 const ease=x=>1-Math.pow(1-Math.min(1,Math.max(0,x)),3);
 function wrap(g,s,mw){const w=String(s).split(/\s+/),L=[];let l='';w.forEach(x=>{const t=l?l+' '+x:x;if(g.measureText(t).width>mw&&l){L.push(l);l=x}else l=t});if(l)L.push(l);return L}
 function plan0(p){
@@ -2453,13 +2465,13 @@ const _tc={};
 async function tr(t,to){t=String(t||'').trim();if(!t)return t;const from=srcLang(t);if(from===to)return t;const key=from+to+t;if(_tc[key])return _tc[key];
  try{const r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(t.slice(0,450))+'&langpair='+from+'|'+to);const j=await r.json();const o=j&&j.responseData&&j.responseData.translatedText;if(o&&!/MYMEMORY|QUERY LENGTH/i.test(o)){_tc[key]=o;return o}}catch(e){}return t}
 const CATS={'web':'website','aplikasi':'application','website':'website','game':'game','toko':'online store','portofolio':'portfolio'};
-async function prep(P){const L=AL.lang;P.lang=L;
+async function prep(P){const L=AL.lang;P.lang=L;if(P.custom){const C=P.custom;P.pts=C.pts[L];P.tags=C.tags[L];P.catT=C.cat[L];P.hook=C.hook[L];P.status='';P.sc.forEach(s=>{s.txt=C.tx[L][s.k]||'';s.d=Math.max(s.d,s.txt.length*.09+1.4)});P.total=P.sc.reduce((a,s)=>a+s.d,0);return P}
  P.pts=await Promise.all(P.pts.map(x=>tr(x,L)));
  if(P.status)P.status=await tr(P.status,L);
  P.catT=CATS[P.cat.toLowerCase()]&&L==='en'?CATS[P.cat.toLowerCase()]:await tr(P.cat,L);
  P.hook=L==='en'?['Need a '+P.catT.toLowerCase()+' that is','practical & professional?']:['Butuh '+P.catT.toLowerCase()+' yang','praktis & profesional?'];
- P.sc.forEach(s=>{s.txt=nt(P,s.k);s.d=Math.max(s.d,s.txt.length*.085+1.3)});P.total=P.sc.reduce((a,s)=>a+s.d,0);return P}
-function nt(P,k){const en=P.lang==='en',c=(P.catT||P.cat).toLowerCase(),j=(a,w)=>a.map((x,i)=>(w[Math.min(i,w.length-1)])+' '+x.replace(/[.!?]+$/,'')).join('. ')+'.';
+ P.sc.forEach(s=>{s.txt=nt(P,s.k);s.d=Math.max(s.d,s.txt.length*.09+1.4)});P.total=P.sc.reduce((a,s)=>a+s.d,0);return P}
+function nt(P,k){if(P.custom&&P.custom.tx)return P.custom.tx[P.lang][k]||'';const en=P.lang==='en',c=(P.catT||P.cat).toLowerCase(),j=(a,w)=>a.map((x,i)=>(w[Math.min(i,w.length-1)])+' '+x.replace(/[.!?]+$/,'')).join('. ')+'.';
  if(k==='hook')return en?'Imagine a '+c+' that makes your work so much easier. Practical, clean, and professional.':'Bayangkan, '+c+' yang membuat pekerjaan Anda jauh lebih mudah. Praktis, rapi, dan profesional.';
  if(k==='intro')return en?'Meet '+P.t+'. A '+c+(P.own?' crafted by '+P.own:'')+', designed so you can start using it right away.':'Kenalkan, '+P.t+'. '+c.charAt(0).toUpperCase()+c.slice(1)+(P.own?' karya '+P.own:'')+', dirancang agar langsung bisa Anda pakai.';
  if(k==='uses')return en?'Here is what you can do. '+j(P.pts,['First,','Next,','And finally,']):'Inilah yang bisa Anda lakukan. '+j(P.pts,['Pertama,','Lalu,','Dan terakhir,']);
@@ -2476,68 +2488,69 @@ function speakPlan(P){const ss=window.speechSynthesis;if(!ss||!AL.on)return()=>{
  P.sc.forEach(s=>{const at=a;tm.push(setTimeout(()=>{try{const vl=voices(),v=vl.length?vl[AL.vi%vl.length]:null;String(s.txt).split(/(?<=[.!?])\s+/).filter(Boolean).forEach(t=>{const u=new SpeechSynthesisUtterance(t);u.lang=P.lang==='en'?'en-US':'id-ID';u.rate=.97;u.pitch=1.02;u.volume=1;if(v){u.voice=v;u.lang=v.lang}ss.speak(u)})}catch(e){}},(at+.3)*1000));a+=s.d});
  return()=>{tm.forEach(clearTimeout);try{ss.cancel()}catch(e){}}}
 const rr=(g,x,y,w,h,r)=>{g.beginPath();g.roundRect(x,y,w,h,r)};
-function glass(g,x,y,w,h,r,a){rr(g,x,y,w,h,r);g.fillStyle='rgba(255,255,255,'+(a||.07)+')';g.fill();g.strokeStyle='rgba(138,240,255,.35)';g.lineWidth=1.5;g.stroke()}
-function txt(g,s,x,y,f,c,al,sh){g.font=f;g.fillStyle=c;g.textAlign=al||'left';g.textBaseline='alphabetic';if(sh){g.shadowColor=sh;g.shadowBlur=26}g.fillText(s,x,y);g.shadowBlur=0}
+function glass(g,x,y,w,h,r,a){rr(g,x,y,w,h,r);g.fillStyle='rgba(255,255,255,'+(a||.07)+')';g.fill();g.strokeStyle=TH.rb(.35);g.lineWidth=1.5;g.stroke()}
+function txt(g,s,x,y,f,c,al,sh){g.font=f;g.fillStyle=c;g.textAlign=al||'left';g.textBaseline='alphabetic';if(sh){g.shadowColor=sh;g.shadowBlur=26}const pp=Math.max(0,1-CURLT/.5);if(pp>0){const k=1+.12*pp*pp;g.save();g.translate(x,y);g.scale(k,k);g.fillText(s,0,0);g.restore()}else g.fillText(s,x,y);g.shadowBlur=0}
 function bg(g,T){
- const gr=g.createLinearGradient(0,0,CW,CH);gr.addColorStop(0,'#060912');gr.addColorStop(.55,'#0a1a33');gr.addColorStop(1,'#0b0f2a');g.fillStyle=gr;g.fillRect(0,0,CW,CH);
- [['56,189,248',.24],['124,92,255',.2],['14,165,233',.16]].forEach((c,i)=>{const x=CW*(.15+.35*i)+Math.sin(T*.5+i*2)*120,y=CH*(.3+.25*(i%2))+Math.cos(T*.4+i)*80,r=g.createRadialGradient(x,y,0,x,y,440);r.addColorStop(0,'rgba('+c[0]+','+c[1]+')');r.addColorStop(1,'rgba('+c[0]+',0)');g.fillStyle=r;g.fillRect(0,0,CW,CH)});
+ const gr=g.createLinearGradient(0,0,CW,CH);gr.addColorStop(0,TH.a);gr.addColorStop(.55,TH.b);gr.addColorStop(1,TH.c);g.fillStyle=gr;g.fillRect(0,0,CW,CH);
+ TH.g.forEach((c,i)=>{const x=CW*(.15+.35*i)+Math.sin(T*.5+i*2)*120,y=CH*(.3+.25*(i%2))+Math.cos(T*.4+i)*80,r=g.createRadialGradient(x,y,0,x,y,440);r.addColorStop(0,'rgba('+c[0]+','+c[1]+')');r.addColorStop(1,'rgba('+c[0]+',0)');g.fillStyle=r;g.fillRect(0,0,CW,CH)});
  g.strokeStyle='rgba(255,255,255,.035)';g.lineWidth=1;for(let x=(T*10)%60;x<CW;x+=60){g.beginPath();g.moveTo(x,0);g.lineTo(x,CH);g.stroke()}for(let y=0;y<CH;y+=60){g.beginPath();g.moveTo(0,y);g.lineTo(CW,y);g.stroke()}
- for(let i=0;i<46;i++){const sx=(i*937)%CW,sy=((i*613)%CH-T*(12+i%5*6)+CH*4)%CH;g.fillStyle='rgba(138,240,255,'+(.15+.25*((i%4)/4))+')';g.beginPath();g.arc(sx,sy,1+i%3*.8,0,7);g.fill()}
+ for(let i=0;i<46;i++){const sx=(i*937)%CW,sy=((i*613)%CH-T*(12+i%5*6)+CH*4)%CH;g.fillStyle=TH.rb(.15+.25*((i%4)/4));g.beginPath();g.arc(sx,sy,1+i%3*.8,0,7);g.fill()}
  const v=g.createRadialGradient(CW/2,CH/2,CH*.45,CW/2,CH/2,CH*.95);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=v;g.fillRect(0,0,CW,CH);
 }
 function draw(g,P,img,T){
  let a=0,s=P.sc[P.sc.length-1],lt=0;for(const x of P.sc){if(T<a+x.d){s=x;lt=T-a;break}a+=x.d}
  const d=s.d,fd=Math.min(1,lt/.35,(d-lt)/.35),E=ease;
- bg(g,T);g.save();const z=1+.03*lt/d;g.translate(CW/2,CH/2);g.scale(z,z);g.translate(-CW/2,-CH/2);g.globalAlpha=fd;
+ CURLT=lt;bg(g,T);g.save();const z=1+.03*lt/d,sk=lt<.35?(1-lt/.35)*7:0;g.translate(CW/2+(Math.random()-.5)*sk,CH/2+(Math.random()-.5)*sk);g.scale(z,z);g.translate(-CW/2,-CH/2);g.globalAlpha=fd;
  if(s.k==='hook'){
-  P.hook.forEach((l,i)=>{const e=E((lt-.2-i*.5)/.6);g.globalAlpha=fd*e;txt(g,l,CW/2,300+i*100+(1-e)*40,(i?'800 78px ':'700 56px ')+FF,i?'#fff':'#9fdcff','center',i?'rgba(56,189,248,.8)':0)});
-  const w=E((lt-1)/.8)*420,lg=g.createLinearGradient(CW/2-210,0,CW/2+210,0);lg.addColorStop(0,'#38BDF8');lg.addColorStop(1,'#7c5cff');g.fillStyle=lg;g.globalAlpha=fd;g.fillRect(CW/2-w/2,520,w,6);
+  P.hook.forEach((l,i)=>{const e=E((lt-.2-i*.5)/.6);g.globalAlpha=fd*e;txt(g,l,CW/2,300+i*100+(1-e)*40,(i?'800 78px ':'700 56px ')+FF,i?'#fff':TH.m,'center',i?TH.ra(.8):0)});
+  const w=E((lt-1)/.8)*420,lg=g.createLinearGradient(CW/2-210,0,CW/2+210,0);lg.addColorStop(0,TH.x);lg.addColorStop(1,TH.y);g.fillStyle=lg;g.globalAlpha=fd;g.fillRect(CW/2-w/2,520,w,6);
  }else if(s.k==='intro'){
-  const e0=E(lt/.7);g.globalAlpha=fd*e0;g.font='700 20px '+FF;const cw=g.measureText(P.cat.toUpperCase()).width+44;glass(g,70,150,cw,44,22,.12);txt(g,P.cat.toUpperCase(),92,179,'700 20px '+FF,'#8af0ff');
-  g.font='800 66px '+FF;wrap(g,P.t,560).slice(0,3).forEach((l,i)=>{const e=E((lt-.3-i*.2)/.5);g.globalAlpha=fd*e;txt(g,l,70,290+i*78+(1-e)*30,'800 66px '+FF,'#fff','left','rgba(56,189,248,.45)')});
-  const e2=E((lt-1.2)/.6);g.globalAlpha=fd*e2;txt(g,(P.lang==='en'?'A ready-to-use solution, practical & professional':'Solusi siap pakai yang praktis & profesional'),70,580,'500 26px '+FF,'#9fdcff');
+  const e0=E(lt/.7);g.globalAlpha=fd*e0;g.font='700 20px '+FF;const cw=g.measureText((P.catT||P.cat).toUpperCase()).width+44;glass(g,70,150,cw,44,22,.12);txt(g,(P.catT||P.cat).toUpperCase(),92,179,'700 20px '+FF,TH.l);
+  g.font='800 66px '+FF;wrap(g,P.t,560).slice(0,3).forEach((l,i)=>{const e=E((lt-.3-i*.2)/.5);g.globalAlpha=fd*e;txt(g,l,70,290+i*78+(1-e)*30,'800 66px '+FF,'#fff','left',TH.ra(.45))});
+  const e2=E((lt-1.2)/.6);g.globalAlpha=fd*e2;txt(g,X(P,'sub',(P.lang==='en'?'A ready-to-use solution, practical & professional':'Solusi siap pakai yang praktis & profesional')),70,580,'500 26px '+FF,TH.m);
   const e3=E(lt/.9),fx=700+(1-e3)*120,fy=130+Math.sin(T*1.5)*8;g.globalAlpha=fd*e3;
-  g.shadowColor='rgba(56,189,248,.5)';g.shadowBlur=50;rr(g,fx,fy,520,400,22);g.fillStyle='#0d1526';g.fill();g.shadowBlur=0;
+  g.shadowColor=TH.ra(.5);g.shadowBlur=50;rr(g,fx,fy,520,400,22);g.fillStyle='#0d1526';g.fill();g.shadowBlur=0;
   g.save();rr(g,fx,fy,520,400,22);g.clip();g.fillStyle='#111c33';g.fillRect(fx,fy,520,44);
   ['#ff5f57','#febc2e','#28c840'].forEach((c,i)=>{g.fillStyle=c;g.beginPath();g.arc(fx+26+i*22,fy+22,6,0,7);g.fill()});
-  g.fillStyle='rgba(255,255,255,.08)';rr(g,fx+110,fy+11,300,22,11);g.fill();txt(g,P.host||'web proyek',fx+130,fy+27,'500 14px '+FF,'#9fdcff');
+  g.fillStyle='rgba(255,255,255,.08)';rr(g,fx+110,fy+11,300,22,11);g.fill();txt(g,P.host||'web proyek',fx+130,fy+27,'500 14px '+FF,TH.m);
   if(img&&img.width){const r=Math.max(520/img.width,356/img.height)*(1.02+lt*.01),w=img.width*r,h=img.height*r;g.save();g.beginPath();g.rect(fx,fy+44,520,356);g.clip();g.drawImage(img,fx+(520-w)/2,fy+44+(356-h)/2,w,h);g.restore()}
   else{const gg=g.createLinearGradient(fx,fy,fx+520,fy+400);gg.addColorStop(0,'#0e3a5c');gg.addColorStop(1,'#3b2a7a');g.fillStyle=gg;g.fillRect(fx,fy+44,520,356);txt(g,(P.t[0]||'P').toUpperCase(),fx+260,fy+290,'800 160px '+FF,'rgba(255,255,255,.85)','center')}
-  g.restore();rr(g,fx,fy,520,400,22);g.strokeStyle='rgba(138,240,255,.45)';g.lineWidth=2;g.stroke();
+  g.restore();rr(g,fx,fy,520,400,22);g.strokeStyle=TH.rb(.45);g.lineWidth=2;g.stroke();
  }else if(s.k==='uses'){
-  txt(g,(P.lang==='en'?'FEATURES & USES':'KEGUNAAN & FUNGSI'),CW/2,130,'700 26px '+FF,'#38BDF8','center');
+  txt(g,X(P,'uses',(P.lang==='en'?'FEATURES & USES':'KEGUNAAN & FUNGSI')),CW/2,130,'700 26px '+FF,TH.x,'center');
   const n=P.pts.length,gap=36,cw=(CW-160-gap*(n-1))/n;
   P.pts.forEach((t,i)=>{const e=E((lt-.5-i*.5)/.6),x=80+i*(cw+gap),y=190+(1-e)*60;g.globalAlpha=fd*e;glass(g,x,y,cw,380,26,.08);
-   g.fillStyle='#38BDF8';g.shadowColor='#38BDF8';g.shadowBlur=24;g.beginPath();g.arc(x+60,y+70,32,0,7);g.fill();g.shadowBlur=0;
+   g.fillStyle=TH.x;g.shadowColor=TH.x;g.shadowBlur=24;g.beginPath();g.arc(x+60,y+70,32,0,7);g.fill();g.shadowBlur=0;
    txt(g,'✓',x+60,y+82,'800 34px '+FF,'#06304a','center');
    g.font='600 '+(n>2?28:34)+'px '+FF;g.fillStyle='#fff';g.textAlign='left';wrap(g,t,cw-60).slice(0,6).forEach((l,j)=>g.fillText(l,x+30,y+150+j*(n>2?40:48)))});
  }else if(s.k==='tags'){
-  txt(g,(P.lang==='en'?'MODERN TECHNOLOGY':'TEKNOLOGI MODERN'),CW/2,150,'700 26px '+FF,'#38BDF8','center');
+  txt(g,X(P,'tags',(P.lang==='en'?'MODERN TECHNOLOGY':'TEKNOLOGI MODERN')),CW/2,150,'700 26px '+FF,TH.x,'center');
   g.font='700 34px '+FF;const ws=P.tags.map(t=>g.measureText(t).width+64);let rows=[[]],rw=0;
   P.tags.forEach((t,i)=>{if(rw+ws[i]>CW-160&&rows[rows.length-1].length){rows.push([]);rw=0}rows[rows.length-1].push(i);rw+=ws[i]+20});
   rows.forEach((r,ri)=>{const tot=r.reduce((a,i)=>a+ws[i]+20,-20);let x=(CW-tot)/2;r.forEach(i=>{const e=E((lt-.3-i*.2)/.4);g.globalAlpha=fd*e;const y=290+ri*100+(1-e)*30;glass(g,x,y-44,ws[i],68,34,.1);txt(g,P.tags[i],x+32,y,'700 34px '+FF,'#fff');x+=ws[i]+20})});
  }else if(s.k==='price'){
-  const e=E(lt/.7);g.globalAlpha=fd*e;txt(g,(P.lang==='en'?'BEST OFFER':'PENAWARAN TERBAIK'),CW/2,200,'700 26px '+FF,'#38BDF8','center');
-  if(P.price){const gg=g.createLinearGradient(CW/2-350,0,CW/2+350,0);gg.addColorStop(0,'#fff');gg.addColorStop(1,'#38BDF8');txt(g,'US$ '+P.price,CW/2,400+(1-e)*40,'800 170px '+FF,gg,'center','rgba(56,189,248,.6)')}
-  g.font='500 36px '+FF;g.fillStyle='#9fdcff';g.textAlign='center';wrap(g,P.status||(P.lang==='en'?'Ready to use • No hassle':'Siap pakai • Tanpa ribet'),1000).slice(0,2).forEach((l,i)=>g.fillText(l,CW/2,(P.price?500:380)+i*50));
+  const e=E(lt/.7);g.globalAlpha=fd*e;txt(g,(P.lang==='en'?'BEST OFFER':'PENAWARAN TERBAIK'),CW/2,200,'700 26px '+FF,TH.x,'center');
+  if(P.price){const gg=g.createLinearGradient(CW/2-350,0,CW/2+350,0);gg.addColorStop(0,'#fff');gg.addColorStop(1,TH.x);txt(g,'US$ '+P.price,CW/2,400+(1-e)*40,'800 170px '+FF,gg,'center',TH.ra(.6))}
+  g.font='500 36px '+FF;g.fillStyle=TH.m;g.textAlign='center';wrap(g,P.status||(P.lang==='en'?'Ready to use • No hassle':'Siap pakai • Tanpa ribet'),1000).slice(0,2).forEach((l,i)=>g.fillText(l,CW/2,(P.price?500:380)+i*50));
  }else{
-  const e=E(lt/.8);g.globalAlpha=fd*e;txt(g,(P.lang==='en'?'Ready to Use Now':'Siap Digunakan Sekarang'),CW/2,250+(1-e)*40,'600 40px '+FF,'#9fdcff','center');
-  const gg=g.createLinearGradient(CW/2-400,0,CW/2+400,0);gg.addColorStop(0,'#fff');gg.addColorStop(1,'#38BDF8');txt(g,(P.lang==='en'?'Try It Now':'Coba Sekarang'),CW/2,370+(1-e)*40,'800 110px '+FF,gg,'center','rgba(56,189,248,.5)');
-  txt(g,P.host||P.t,CW/2,440,'700 38px '+FF,'#8af0ff','center');
-  const pu=1+Math.sin(T*5)*.025;g.save();g.translate(CW/2,540);g.scale(pu,pu);g.shadowColor='#38BDF8';g.shadowBlur=36;rr(g,-170,-40,340,80,40);const b2=g.createLinearGradient(-170,0,170,0);b2.addColorStop(0,'#38BDF8');b2.addColorStop(1,'#7c5cff');g.fillStyle=b2;g.fill();g.shadowBlur=0;
+  const e=E(lt/.8);g.globalAlpha=fd*e;txt(g,X(P,'ctaA',(P.lang==='en'?'Ready to Use Now':'Siap Digunakan Sekarang')),CW/2,250+(1-e)*40,'600 40px '+FF,TH.m,'center');
+  const gg=g.createLinearGradient(CW/2-400,0,CW/2+400,0);gg.addColorStop(0,'#fff');gg.addColorStop(1,TH.x);txt(g,X(P,'ctaB',(P.lang==='en'?'Try It Now':'Coba Sekarang')),CW/2,370+(1-e)*40,'800 110px '+FF,gg,'center',TH.ra(.5));
+  txt(g,P.host||P.t,CW/2,440,'700 38px '+FF,TH.l,'center');
+  const pu=1+Math.sin(T*5)*.025;g.save();g.translate(CW/2,540);g.scale(pu,pu);g.shadowColor=TH.x;g.shadowBlur=36;rr(g,-170,-40,340,80,40);const b2=g.createLinearGradient(-170,0,170,0);b2.addColorStop(0,TH.x);b2.addColorStop(1,TH.y);g.fillStyle=b2;g.fill();g.shadowBlur=0;
   g.save();rr(g,-170,-40,340,80,40);g.clip();g.fillStyle='rgba(255,255,255,.35)';g.fillRect(-260+((T*260)%700),-40,50,80);g.restore();
-  txt(g,(P.lang==='en'?'Visit Link  ↗':'Kunjungi Link  ↗'),0,12,'800 30px '+FF,'#06182a','center');g.restore();
+  txt(g,X(P,'ctaC',(P.lang==='en'?'Visit Link  ↗':'Kunjungi Link  ↗')),0,12,'800 30px '+FF,'#06182a','center');g.restore();
   if(P.own)txt(g,P.t+' • '+P.own,CW/2,650,'500 22px '+FF,'#6b7a90','center');
  }
- g.restore();g.globalAlpha=1;
- if(P.own)txt(g,P.own,60,56,'700 20px '+FF,'rgba(138,240,255,.8)');
- g.fillStyle='rgba(255,255,255,.1)';g.fillRect(0,CH-6,CW,6);const pg=g.createLinearGradient(0,0,CW,0);pg.addColorStop(0,'#38BDF8');pg.addColorStop(1,'#7c5cff');g.fillStyle=pg;g.fillRect(0,CH-6,CW*T/P.total,6);
+ g.restore();g.globalAlpha=1;film(g,T,lt);
+ if(P.own)txt(g,P.own,60,56,'700 20px '+FF,TH.rb(.8));
+ g.fillStyle='rgba(255,255,255,.1)';g.fillRect(0,CH-6,CW,6);const pg=g.createLinearGradient(0,0,CW,0);pg.addColorStop(0,TH.x);pg.addColorStop(1,TH.y);g.fillStyle=pg;g.fillRect(0,CH-6,CW*T/P.total,6);
 }
 function music(ac,dst,P){
  const t0=ac.currentTime+.1,out=(g)=>{g.connect(ac.destination);g.connect(dst)};
  const nt=(f,t,d,ty,v)=>{const o=ac.createOscillator(),g=ac.createGain();o.type=ty;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);out(g);o.start(t);o.stop(t+d+.05)};
  const roots=[0,0,5,7,5,0],ar=[0,4,7,12,7,4];let at=0;
  P.sc.forEach((s,i)=>{const r=roots[i%6];
+  {const o=ac.createOscillator(),gb=ac.createGain(),q=t0+at;o.type='sine';o.frequency.setValueAtTime(130,q);o.frequency.exponentialRampToValueAtTime(38,q+.55);gb.gain.setValueAtTime(.0001,q);gb.gain.linearRampToValueAtTime(.34,q+.02);gb.gain.exponentialRampToValueAtTime(.0001,q+1);o.connect(gb);out(gb);o.start(q);o.stop(q+1.05)}
   for(let t=0;t<s.d;t+=.25){const b=Math.round(t*4);nt(261.6*Math.pow(2,(r+ar[b%6])/12),t0+at+t,.5,'triangle',.035);
    if(b%2===0){const k=ac.createOscillator(),g=ac.createGain(),q=t0+at+t;k.frequency.setValueAtTime(130,q);k.frequency.exponentialRampToValueAtTime(45,q+.15);g.gain.setValueAtTime(.2,q);g.gain.exponentialRampToValueAtTime(.0001,q+.2);k.connect(g);out(g);k.start(q);k.stop(q+.25)}}
   nt(130.8*Math.pow(2,r/12),t0+at,s.d,'sine',.06);at+=s.d});
@@ -2562,21 +2575,33 @@ function openOld(p){
  const info=document.createElement('span');info.style.cssText='color:#9fdcff;font-size:13px';
  let kill=null,img=null,url=null,closed=false,seq=0;
  const close=()=>{closed=true;seq++;kill&&kill();url&&URL.revokeObjectURL(url);ov.remove()};
- const dl=B('⬇ Simpan Video',()=>{});dl.style.display='none';
+ const dl=B('⬇ Simpan',()=>{});dl.style.display='none';
  const play=()=>{kill&&kill();dl.style.display='none';info.textContent='Membuat video iklan...';
-  P=plan(p);const my=++seq;prep(P).then(()=>{if(my!==seq||closed)return;kill=run(P,img,cv,blob=>{if(!blob){info.textContent='Selesai.';return}
-   url&&URL.revokeObjectURL(url);url=URL.createObjectURL(blob);info.textContent='Selesai!';dl.style.display='';
+  P=plan(p);const my=++seq;prep(P).then(()=>{if(my!==seq||closed)return;info.textContent='';kill=run(P,img,cv,blob=>{if(!blob){info.textContent='Selesai.';return}
+   url&&URL.revokeObjectURL(url);url=URL.createObjectURL(blob);info.textContent='';dl.style.display='';
    dl.onclick=()=>{const a=document.createElement('a');a.href=url;a.download=(P.t.replace(/[^\w]+/g,'-')||'proyek')+'-iklan.webm';document.body.appendChild(a);a.click();a.remove()}})})};
- const lb=B('',()=>{});const lab=()=>{lb.textContent='🌐 '+(AL.lang==='en'?'English':'Indonesia')};lab();lb.onclick=()=>{AL.lang=AL.lang==='en'?'id':'en';AL.vi=0;try{localStorage.setItem('pf_adlang',AL.lang)}catch(e){}lab();play()};
- const vb=B('🎙 Ganti Suara',()=>{AL.vi++;play()});const mb=B('🔊',()=>{});mb.onclick=()=>{AL.on=!AL.on;mb.textContent=AL.on?'🔊':'🔇';play()};
- bar.append(B('↻ Putar Ulang',play),lb,vb,mb,dl,B('✕ Tutup',close),info);ov.append(cv,bar);document.body.appendChild(ov);
+ const seg=document.createElement('div');seg.style.cssText='display:inline-flex;border:1px solid rgba(255,255,255,.18);border-radius:10px;overflow:hidden';const lbs={};
+ const lab=()=>{['id','en'].forEach(k=>{lbs[k].style.background=AL.lang===k?TH.x:'rgba(255,255,255,.06)';lbs[k].style.color=AL.lang===k?'#04131f':'#e6f6ff'})};
+ ['id','en'].forEach(k=>{const b=document.createElement('button');b.type='button';b.textContent=k.toUpperCase();b.style.cssText='padding:9px 14px;font-weight:700;cursor:pointer;border:0';b.onclick=()=>{if(AL.lang===k)return;AL.lang=k;AL.vi=0;try{localStorage.setItem('pf_adlang',k)}catch(e){}lab();play()};lbs[k]=b;seg.appendChild(b)});lab();
+ const mb=B('🔊',()=>{});mb.onclick=()=>{AL.on=!AL.on;mb.textContent=AL.on?'🔊':'🔇';play()};
+ const buy=p.price?(()=>{const a=document.createElement('a');a.textContent='Beli';a.href='/beli.html?pj='+encodeURIComponent(p.t||'');a.style.cssText='padding:9px 18px;border-radius:10px;font-weight:700;text-decoration:none;color:#04131f;background:linear-gradient(135deg,#67e8f9,#d8eefc)';a.onclick=e=>{e.preventDefault();close();if(window.openCheckout)window.openCheckout(a.getAttribute('href'));else location.href=a.href};return a})():null;
+ bar.append(...[B('↻',play),seg,mb,dl,buy,B('✕',close),info].filter(Boolean));ov.append(cv,bar);document.body.appendChild(ov);
  if(p.img){img=new Image();img.onload=play;img.onerror=()=>{img=null;play()};img.src=p.img}else play();
 }
 try{window.speechSynthesis&&speechSynthesis.getVoices();window.speechSynthesis&&(speechSynthesis.onvoiceschanged=()=>{})}catch(e){}
-function open(p){return (window.BrandFilm&&window.BrandFilm.open)?window.BrandFilm.open(p):openOld(p)}
-window.AD={open,openOld};
+function embed(p,cv,hooks){
+ hooks=hooks||{};const g=cv.getContext('2d');let P=null,kill=null,img=null,seq=0,live=false;cv.width=CW;cv.height=CH;
+ const st=s=>{try{hooks.state&&hooks.state(s)}catch(e){}};
+ function ld(cb){if(p.img){const im=new Image();im.onload=()=>{img=im;cb()};im.onerror=()=>{img=null;cb()};im.src=p.img}else cb()}
+ function bld(){TH=THEMES[0];P=plan(p);P.custom=p.custom;P.X=p.X;return prep(P)}
+ function poster(){ld(()=>{bld().then(()=>{TH=THEMES[0];draw(g,P,img,P.sc[0].d+1.8)})})}
+ function play(){kill&&kill();kill=null;const my=++seq;live=true;st('loading');ld(()=>{bld().then(()=>{if(my!==seq)return;st('playing');TH=THEMES[0];kill=run(P,img,cv,()=>{live=false;st('done')})})})}
+ function stop(){seq++;kill&&kill();kill=null;live=false;st('idle')}
+ return{play:play,stop:stop,poster:poster,isLive:()=>live}}
+function open(p){try{window.__heroStop&&window.__heroStop()}catch(e){}setTheme(p);return openOld(p)}
+window.AD={open,openOld,embed};
 const css='margin-top:8px;padding:8px 14px;border-radius:10px;border:1px solid rgba(56,189,248,.5);background:rgba(56,189,248,.12);color:#8af0ff;font-weight:600;cursor:pointer;font-size:12px';
-function mk(fn){const b=document.createElement('button');b.type='button';b.className='adBtn';b.style.cssText=css;b.textContent='▶ Tonton Video';b.onclick=fn;return b}
+function mk(fn){const b=document.createElement('button');b.type='button';b.className='adBtn';b.style.cssText=css;b.textContent='Video';b.onclick=fn;return b}
 function addBtns(){
  if(typeof D==='undefined')return;
  document.querySelectorAll('#displayProjectsGrid .pjc').forEach((c,i)=>{const x=D.projects[i];if(x&&!x.video&&!c.querySelector('.adBtn'))c.appendChild(mk(()=>open(x)))});
@@ -2588,6 +2613,130 @@ if(typeof drawLists==='function'){const r=drawLists;drawLists=function(){const v
 setTimeout(()=>{try{addBtns()}catch(e){}},800);
 })();
 
+</script>
+<script id="aslb-message-reliability">
+(function(){
+  'use strict';
+  let sending=false,lastSentAt=0;
+  function el(id){return document.getElementById(id)}
+  function status(message,ok){
+    let n=el('messageSendStatus');
+    const host=el('contactBox')||el('chatLogWrap')||el('sendBtn')?.parentElement;
+    if(!n&&host){n=document.createElement('p');n.id='messageSendStatus';n.setAttribute('role','status');n.setAttribute('aria-live','polite');n.style.cssText='font:12px/1.5 sans-serif;margin:8px 0;color:'+(ok?'#86efac':'#fca5a5');host.appendChild(n)}
+    if(n){n.textContent=message;n.style.color=ok?'#86efac':'#fca5a5';n.style.display=message?'':'none'}
+  }
+  window.handleFormSubmit=async function(){
+    if(MODE==='admin'){alert('Ini hanya pratinjau. Untuk mengirim pesan, buka website publik.');return}
+    const btn=el('sendBtn'),field=el('chatText');
+    if(sending)return;
+    if(!field){status('Kolom pesan tidak ditemukan. Muat ulang halaman.',false);return}
+    const text=(field.value||'').trim();
+    if(!text){status('Tulis pesan terlebih dahulu.',false);field.focus();return}
+    const honeypot=el('waHp');
+    if(honeypot&&honeypot.value.trim()){status('Pengiriman ditolak oleh pemeriksaan keamanan. Kosongkan kolom dan muat ulang halaman.',false);return}
+    const nameSaved=LS.getItem('pf_visitor_name')||'';
+    const emailSaved=LS.getItem('pf_visitor_email')||'';
+    let name=nameSaved,email=emailSaved;
+    if(!name){const n=el('chatName');name=(n?.value||'').trim().slice(0,60);if(!name){status('Isi nama atau perusahaan terlebih dahulu.',false);n?.focus();return}}
+    if(!email){const e=el('chatEmail');email=(e?.value||'').trim().slice(0,120);if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){status('Masukkan alamat email yang valid.',false);e?.focus();return}}
+    if(Date.now()-lastSentAt<1800){status('Tunggu sebentar sebelum mengirim pesan berikutnya.',false);return}
+    sending=true;if(btn)btn.disabled=true;
+    try{
+      if(window.__BK_READY)await window.__BK_READY;
+      if(BK.bootError)throw BK.bootError;
+      if(!BK.live||!BK.auth||!BK.auth.currentUser||!BK.auth.currentUser.uid){throw new Error('Autentikasi Firebase belum siap. Aktifkan Anonymous di Firebase Authentication lalu muat ulang website.')}
+      const uid=BK.auth.currentUser.uid;
+      BK.uid=uid;
+      const subject=el('chatSubject')?.value||'Pesan portofolio';
+      const first=!nameSaved;
+      const message=(first?'['+subject+'] ':'')+text+(first?'\n✉ '+email:'');
+      await bkSend(uid,name,message,'visitor');
+      LS.setItem('pf_visitor_name',name);LS.setItem('pf_visitor_email',email);
+      field.value='';field.style.height='auto';lastSentAt=Date.now();
+      if(typeof waLock==='function')waLock();
+      if(typeof lockFields==='function')lockFields();
+      status('',true);
+    }catch(err){
+      console.error('Message send failed:',err);
+      status('Pesan belum terkirim: '+(err&&err.message?err.message:'Kesalahan koneksi Firebase'),false);
+    }finally{sending=false;if(btn)btn.disabled=false}
+  };
+  document.addEventListener('click',function(e){
+    const b=e.target&&e.target.closest&&e.target.closest('#sendBtn');
+    if(!b)return;
+    if(b.getAttribute('onclick'))return;
+    e.preventDefault();window.handleFormSubmit();
+  },true);
+})();
+</script>
+<script id="aslbTour">
+(function(){
+function $(i){return document.getElementById(i)}
+var cur=null,eng=null,playing=false;
+var CUSTOM={
+ cat:{id:'Web Publik',en:'Public Site'},
+ hook:{id:['Kenali web ini','dalam satu menit'],en:['Discover this site','in one minute']},
+ pts:{id:['Jelajahi proyek: gambar, harga, dan video','Chat pribadi ke pemilik, seperti WhatsApp','Beli aman lewat PayPal'],en:['Browse projects: images, prices, and videos','Private chat with the owner, like WhatsApp','Secure checkout with PayPal']},
+ tags:{id:['Proyek','Video','Chat Pribadi','Beli Aman','CV'],en:['Projects','Video','Private Chat','Secure Checkout','CV']},
+ tx:{
+  id:{hook:'Selamat datang di web portofolio Asalibi Studio. Mari kenali semua fiturnya dalam satu menit.',
+      intro:'Ini adalah web publik Asalibi Studio. Di sini Anda bisa melihat profil, keahlian, dan karya digital pilihan.',
+      uses:'Fitur utamanya. Pertama, jelajahi proyek lengkap dengan gambar, harga, dan video. Kedua, kirim pesan pribadi ke pemilik, seperti WhatsApp. Ketiga, beli dengan aman lewat PayPal.',
+      tags:'Semua ada dalam satu halaman: proyek, video, chat pribadi, pembelian aman, dan CV.',
+      cta:'Siap mulai? Tekan Lihat Portofolio untuk melihat proyek, atau Hubungi Saya untuk berbicara langsung. Terima kasih.'},
+  en:{hook:'Welcome to the Asalibi Studio portfolio. Let us explore every feature in one minute.',
+      intro:'This is the public site of Asalibi Studio. Here you can see the profile, skills, and selected digital work.',
+      uses:'Main features. First, browse projects with images, prices, and videos. Second, send a private message to the owner, just like WhatsApp. Third, buy securely with PayPal.',
+      tags:'Everything is on one page: projects, video, private chat, secure checkout, and the CV.',
+      cta:'Ready to start? Tap View Portfolio to see the projects, or Contact Me to talk directly. Thank you.'}}};
+var XO={id:{uses:'FITUR UTAMA',tags:'SEMUA DALAM SATU',sub:'Portofolio, chat, dan pembelian dalam satu web',ctaA:'Siap Menjelajah',ctaB:'Mulai Sekarang',ctaC:'Lihat Portofolio'},
+        en:{uses:'MAIN FEATURES',tags:'ALL IN ONE',sub:'Portfolio, chat, and checkout in one site',ctaA:'Ready to Explore',ctaB:'Start Now',ctaC:'View Portfolio'}};
+function pj(){
+ var img='';try{(D.projects||[]).some(function(x){if(x&&x.img){img=x.img;return true}})}catch(e){}
+ if(!img){try{img=D.photo||''}catch(e){}}
+ return{t:'Asalibi Studio',cat:'Web Publik',d:'Jelajahi proyek. Chat pribadi. Beli aman.',tags:'a,b,c,d,e',img:img,link:location.href,price:'',status:'',custom:CUSTOM,X:XO}}
+function lang(){try{return localStorage.getItem('pf_adlang')||(/^id/i.test(navigator.language||'')?'id':'en')}catch(e){return'id'}}
+function vsrc(v){
+ var r=window.pfParseVideo?window.pfParseVideo(v):null;if(!r||r.t==='link')return null;
+ if(r.t==='yt')return{f:'https://www.youtube-nocookie.com/embed/'+r.id+'?rel=0&modestbranding=1&playsinline=1'};
+ if(r.t==='vimeo')return{f:'https://player.vimeo.com/video/'+r.id+(r.h?'?h='+r.h:'')};
+ if(r.t==='drive')return{f:'https://drive.google.com/file/d/'+r.id+'/preview'};
+ if(r.t==='file')return{v:r.url};return null}
+function mount(){
+ var h=$('home');if(!h)return null;var b=$('tourBox');if(b)return b;
+ var a=h.querySelector('a[href="#projects"]');if(!a)return null;
+ b=document.createElement('div');b.id='tourBox';b.style.cssText='margin:18px auto 16px;width:100%;max-width:560px';
+ b.innerHTML='<div id="tourFrame" style="position:relative;aspect-ratio:16/9;border-radius:20px;overflow:hidden;border:1px solid rgba(125,211,252,.4);background:#050b18;box-shadow:0 12px 44px rgba(0,0,0,.5)"></div><div id="tourBar" style="display:flex;justify-content:center;margin-top:10px"></div>';
+ var ref=(a.parentElement&&a.parentElement!==h)?a.parentElement:a;ref.parentNode.insertBefore(b,ref);return b}
+function stopEng(){try{eng&&eng.stop()}catch(e){}playing=false}
+window.__heroStop=stopEng;
+function auto(){
+ var fr=$('tourFrame'),bar=$('tourBar');if(!fr||!window.AD||!window.AD.embed)return;
+ fr.innerHTML='<canvas id="tourCv" style="width:100%;height:100%;display:block;cursor:pointer"></canvas><button id="tourPlay" type="button" aria-label="Putar video" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:68px;height:68px;border-radius:50%;border:1.5px solid rgba(125,232,255,.85);background:rgba(5,11,24,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#e6f6ff;font-size:26px;cursor:pointer;box-shadow:0 0 28px rgba(56,189,248,.45)">&#9654;</button>';
+ var cv=$('tourCv'),pb=$('tourPlay');
+ eng=window.AD.embed(pj(),cv,{state:function(s){playing=(s==='playing'||s==='loading');pb.style.display=playing?'none':'block';pb.innerHTML=s==='done'?'&#8635;':'&#9654;'}});
+ function go(){if(playing){eng.stop();eng.poster()}else eng.play()}
+ pb.onclick=go;cv.onclick=function(){if(playing){eng.stop();eng.poster()}};
+ bar.innerHTML='';var seg=document.createElement('div');seg.style.cssText='display:inline-flex;border:1px solid rgba(125,211,252,.35);border-radius:10px;overflow:hidden';var bs={};
+ function lab(){['id','en'].forEach(function(k){var on=lang()===k;bs[k].style.background=on?'#67e8f9':'rgba(255,255,255,.06)';bs[k].style.color=on?'#04131f':'#e6f6ff'})}
+ ['id','en'].forEach(function(k){var x=document.createElement('button');x.type='button';x.textContent=k.toUpperCase();x.style.cssText='padding:7px 16px;font-weight:700;font-size:12px;letter-spacing:.08em;cursor:pointer;border:0';x.onclick=function(){if(lang()===k)return;try{localStorage.setItem('pf_adlang',k)}catch(e){}
+  try{if(window.AD&&window.AD._setLang)window.AD._setLang(k)}catch(e){}lab();var was=playing;eng.stop();if(was)eng.play();else eng.poster()};bs[k]=x;seg.appendChild(x)});
+ bar.appendChild(seg);lab();
+ var rd=function(){try{eng.poster()}catch(e){}};if(document.fonts&&document.fonts.ready)document.fonts.ready.then(rd);else rd()}
+function custom(src){
+ stopEng();var fr=$('tourFrame'),bar=$('tourBar');bar.innerHTML='';fr.innerHTML='';
+ var el;if(src.f){el=document.createElement('iframe');el.src=src.f;el.title='Video';el.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';el.setAttribute('allowfullscreen','');el.style.cssText='width:100%;height:100%;border:0'}
+ else{el=document.createElement('video');el.src=src.v;el.controls=true;el.playsInline=true;el.preload='metadata';el.style.cssText='width:100%;height:100%;background:#000'}
+ fr.appendChild(el)}
+function refresh(){
+ var v='';try{v=String((D&&D.heroVideo)||'').trim()}catch(e){}
+ var b=mount();if(!b)return;
+ if(v===cur&&$('tourFrame').firstChild)return;
+ cur=v;var s=v?vsrc(v):null;
+ if(s)custom(s);else{stopEng();auto()}}
+function boot(){try{refresh()}catch(e){console.error(e)}}
+window.addEventListener('load',function(){setTimeout(boot,600);setInterval(boot,1500)});
+})();
 </script>
 </body>
 </html>
