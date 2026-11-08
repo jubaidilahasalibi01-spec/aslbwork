@@ -25,7 +25,7 @@ const DB='https://aslb-189b4-default-rtdb.asia-southeast1.firebasedatabase.app';
 const $=i=>document.getElementById(i);let P={};
 const say=(t,bad)=>{$('msg').textContent=t;$('msg').style.color=bad?'#fca5a5':'#a7f3d0'};
 const ok=()=>$('n').value.trim().length>1&&/^\S+@\S+\.\S+$/.test($('e').value.trim());
-const show=()=>{const p=P[$('s').value];$('ds').textContent=p?('US$ '+Number(p.price).toFixed(2)+(p.desc?' - '+p.desc:'')):''};
+const show=()=>{const p=P[$('s').value];$('ds').textContent=p?('US$ '+Number(p.price).toFixed(2)):''};
 function parsePrice(v){var s=String(v==null?'':v).replace(/[^\d.,]/g,'');if(!s)return 0;var lc=s.lastIndexOf(','),ld=s.lastIndexOf('.');
  if(lc>-1&&ld>-1){s=lc>ld?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'')}
  else if(lc>-1){s=(/,\d{1,2}$/.test(s)&&s.split(',').length===2)?s.replace(',','.'):s.replace(/,/g,'')}
@@ -38,7 +38,7 @@ $('bt').onclick=goHome;
 $('home').onclick=goHome;
 $('cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('code').textContent);$('cp').textContent='Tersalin'};
 (async()=>{
- const J=u=>fetch(u).then(r=>r.json()).catch(()=>null);
+ const J=async u=>{const r=await fetch(u,{cache:'no-store'});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j};
  const [c,pr,pj]=await Promise.all([J('/api/config'),J(DB+'/products.json'),J(DB+'/profile/projects.json')]);
  if(!c)throw 0;
  $('nm').textContent=c.name;
@@ -52,32 +52,21 @@ $('cp').onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText($('code'
  const sp=new URLSearchParams(location.search),q=sp.get('p'),pjq=sp.get('pj');
  if(pjq&&P['pj:'+pjq])$('s').value='pj:'+pjq;else if(q&&P[q])$('s').value=q;
  show();
- if(!c.clientId)throw 0;
+ if(!c.clientId)throw new Error('PAYPAL_CLIENT_ID belum diatur di Vercel.');
+ if(!['live','sandbox'].includes(String(c.mode||'').toLowerCase()))throw new Error('PAYPAL_ENV harus diisi live atau sandbox di Vercel.');
  const s=document.createElement('script');
  s.src='https://www.paypal.com/sdk/js?client-id='+encodeURIComponent(c.clientId)+'&currency=USD&intent=capture';
+ s.onerror=()=>say('PayPal SDK gagal dimuat. Periksa koneksi, Client ID, dan mode '+c.mode+'.',1);
  s.onload=()=>paypal.Buttons({
   onClick:(d,a)=>{if(!ok()){say('Isi nama dan email dulu.',1);return a.reject()}say('')},
-  createOrder:async()=>{
-   const k=$('s').value,b=k.indexOf('pj:')===0?{projectTitle:k.slice(3)}:{productId:k};
-   const res=await fetch('/api/paypal-create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
-   const j=await res.json();
-   if(!res.ok||!j.id)throw new Error(j.error||'Gagal membuat pesanan di server.');
-   return j.id;
-  },
-  onApprove:async d=>{
-   say('Memverifikasi pembayaran...');
-   const res=await fetch('/api/paypal-capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderID:d.orderID,name:$('n').value.trim(),email:$('e').value.trim()})});
-   const j=await res.json();
-   if(res.ok&&j.code){
-    $('bt').style.display='none';$('pp').style.display='none';$('done').style.display='block';$('code').textContent=j.code;say('');
-   }else{
-    say(j.error||'Gagal memproses pembayaran. Simpan nomor pesanan: '+d.orderID,1);
-   }
-  },
-  onCancel:()=>say('Pembayaran dibatalkan.',1),
-  onError:(err)=>{console.error('PayPal Error:',err);say('Terjadi kesalahan sistem atau jaringan pada PayPal.',1);}
- }).render('#pp');
+  createOrder:async()=>{const k=$('s').value,b=k.indexOf('pj:')===0?{projectTitle:k.slice(3)}:{productId:k};
+   const r=await fetch('/api/paypal-create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});const j=await r.json().catch(()=>({}));if(!r.ok||!j.id)throw new Error(j.error||'Server gagal membuat pesanan.');return j.id},
+  onApprove:async d=>{say('Memverifikasi pembayaran...');
+   const r=await fetch('/api/paypal-capture',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderID:d.orderID,name:$('n').value.trim(),email:$('e').value.trim()})});const j=await r.json().catch(()=>({}));
+   if(r.ok&&j.code){$('bt').style.display='none';$('pp').style.display='none';$('done').style.display='block';$('code').textContent=j.code;say('')}else say(j.error||'Gagal. Simpan nomor pesanan: '+d.orderID,1)},
+  onCancel:()=>say('Pembayaran dibatalkan. Anda dapat mencoba kembali.',1),
+  onError:e=>{console.error('PayPal checkout',e);say('PayPal mengalami kendala. Periksa konfigurasi server atau coba kembali.',1)}
+ }).render('#pp').catch(e=>{console.error(e);say('Tombol PayPal gagal ditampilkan. Periksa Client ID dan mode pembayaran.',1)});
  document.head.appendChild(s);
-})().catch(()=>say('Halaman pembelian belum dikonfigurasi.',1));
+})().catch(e=>{console.error('checkout setup',e);say((e&&e.message)||'Halaman pembelian belum dikonfigurasi.',1)});
 </script></body></html>
- 

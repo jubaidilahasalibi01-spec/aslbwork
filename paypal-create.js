@@ -1,42 +1,35 @@
 const { admin, pp, parsePrice, findProject } = require('./_lib');
-
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const b = req.body || {};
+  res.setHeader('Cache-Control', 'no-store');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method tidak diizinkan.' });
   try {
-    let cid, name, price;
-    if (b.projectTitle) {
-      const t = String(b.projectTitle).slice(0, 100), x = await findProject(t);
-      price = x ? parsePrice(x.price) : 0;
-      if (!price) return res.status(404).json({ error: 'Proyek tidak ditemukan.' });
-      cid = 'pj:' + t; name = t;
+    const body = req.body || {};
+    let customId, title, price;
+    if (body.projectTitle) {
+      title = String(body.projectTitle).trim().slice(0, 100);
+      const project = await findProject(title);
+      price = project ? parsePrice(project.price) : 0;
+      if (!price) return res.status(404).json({ error: 'Proyek tidak ditemukan atau belum memiliki harga.' });
+      customId = 'pj:' + title;
     } else {
-      const id = String(b.productId || '');
+      const id = String(body.productId || '');
       if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) return res.status(400).json({ error: 'Produk tidak valid.' });
-      const p = (await admin.database().ref('products/' + id).get()).val();
-      if (!p || !(Number(p.price) > 0) || p.active === false) return res.status(404).json({ error: 'Produk tidak ditemukan.' });
-      cid = id; name = String(p.name); price = Number(p.price);
+      const product = (await admin.database().ref('products/' + id).get()).val();
+      price = product ? Number(product.price) : 0;
+      if (!product || !Number.isFinite(price) || price <= 0 || product.active === false) return res.status(404).json({ error: 'Produk tidak ditemukan atau tidak aktif.' });
+      title = String(product.name || 'Produk').slice(0, 120);
+      customId = id;
     }
-
-    // PEMBERSIH UTAMA: Hapus total semua simbol aneh, angka acak, atau karakter khusus, sisakan huruf, spasi, titik, dan strip saja.
-    const cleanName = name.replace(/[^\w\s.-]/gi, ' ').replace(/\s+/g, ' ').trim().slice(0, 120) || 'Digital Product';
-
-    const o = await pp('/v2/checkout/orders', 'POST', {
+    const order = await pp('/v2/checkout/orders', 'POST', {
       intent: 'CAPTURE',
-      purchase_units: [{
-        custom_id: cid,
-        description: cleanName,
-        amount: { currency_code: 'USD', value: price.toFixed(2) }
-      }]
+      purchase_units: [{ custom_id: customId, description: title, amount: { currency_code: 'USD', value: price.toFixed(2) } }]
     });
-    
-    if (!o || !o.id) {
-      return res.status(500).json({ error: 'Gagal membuat pesanan ke PayPal.' });
-    }
-
-    res.json({ id: o.id });
-  } catch (e) {
-    res.status(500).json({ error: 'Gagal terhubung ke server PayPal.' });
+    if (!order.id) throw new Error('PayPal did not return an order ID.');
+    return res.status(200).json({ id: order.id });
+  } catch (error) {
+    console.error('[paypal-create]', error && error.message);
+    const msg = String(error && error.message || '');
+    const config = /PAYPAL_ENV|PAYPAL_CLIENT_ID|PAYPAL_SECRET|FIREBASE_SERVICE_ACCOUNT|FIREBASE_DB_URL/.test(msg);
+    return res.status(config ? 503 : 502).json({ error: config ? 'Konfigurasi pembayaran di server belum benar. Periksa Environment Variables Vercel.' : 'PayPal gagal membuat pesanan. Periksa mode Sandbox/Live dan kredensial PayPal.' });
   }
 };
-                                                               

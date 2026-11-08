@@ -1,1 +1,10 @@
-{"name":"aslbwork","private":true,"engines":{"node":"22.x"},"dependencies":{"firebase-admin":"^12.0.0"}}
+{
+  "name": "asalibi-studio-portfolio",
+  "private": true,
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}

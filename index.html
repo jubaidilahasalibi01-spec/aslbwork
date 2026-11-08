@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id" translate="no" class="scroll-smooth dark">
 <head>
-<meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://translate.googleapis.com https://api.mymemory.translated.net https://open.er-api.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; media-src 'self' https: blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'"><meta name="referrer" content="no-referrer"><meta name="google" content="notranslate"><meta http-equiv="Content-Language" content="id"><meta name="color-scheme" content="dark"><meta name="robots" content="noai, noimageai"><meta name="copyright" content="Jubaidilah Asalibi">
+<meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.googleapis.com https://translate.googleapis.com https://api.mymemory.translated.net https://open.er-api.com; frame-src 'self' https://*.firebaseapp.com https://www.youtube-nocookie.com https://player.vimeo.com https://drive.google.com; media-src 'self' https: blob: data:; object-src 'none'; base-uri 'none'; form-action 'self'"><meta name="referrer" content="no-referrer"><meta name="google" content="notranslate"><meta http-equiv="Content-Language" content="id"><meta name="color-scheme" content="dark"><meta name="robots" content="noai, noimageai"><meta name="copyright" content="Jubaidilah Asalibi">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Portofolio Jubaidilah Asalibi - profil, keahlian, hasil proyek, dan penghargaan.">
 <meta name="theme-color" content="#0B0F17">
@@ -273,7 +273,7 @@ select.pmI option{background:#0b1626;color:#fff}
 textarea.pmI{height:auto;min-height:150px;padding:14px 20px;border-radius:22px;resize:none;line-height:1.5}
 .pmI.lk{opacity:.7;border-style:dashed}
 .pmSend{display:flex;align-items:center;justify-content:center;gap:10px;height:52px;border-radius:26px;border:0;background:linear-gradient(90deg,#4fe0f5,#d8eefc);color:#06202e;font-weight:700;font-size:16px;box-shadow:0 6px 22px rgba(56,189,248,.35)}
-.pmSend:disabled{opacity:.6}.pmNote{display:flex;gap:8px;color:#b6c4d8;font-size:13px;line-height:1.5;margin:0}.pmNote.hidden,#chatLogWrap.hidden{display:none}
+.pmSend:disabled{opacity:.6}.pmNote{display:none!important;/* pesan status lama disembunyikan */display:flex;gap:8px;color:#b6c4d8;font-size:13px;line-height:1.5;margin:0}.pmNote.hidden,#chatLogWrap.hidden{display:none}
 .pmSub{color:#7dd3fc;font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:6px 0}
 </style>
 <style id="skin8">#gatewayScreen.hidden,.hidden#gatewayScreen{display:none!important}</style>
@@ -795,12 +795,15 @@ window.addEventListener('storage',e=>{if(e.key===LOCAL_CHATS)lcNotify()});
 window.addEventListener('storage',e=>{if(e.key===KEY&&e.newValue&&MODE==='public'){try{applyProfile(JSON.parse(e.newValue))}catch(x){}}});
 async function bkBoot(){
  if(!fbOK()){BK.live=false;BK.uid=localVisitorId();return}
- if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
- BK.live=true;BK.auth=firebase.auth();BK.db=firebase.database();
- await BK.auth.setPersistence(MODE==='admin'?firebase.auth.Auth.Persistence.SESSION:firebase.auth.Auth.Persistence.LOCAL);
- const u=await new Promise(res=>{const un=BK.auth.onAuthStateChanged(x=>{un();res(x)})});
- if(u)BK.uid=u.uid;
- else if(MODE==='public'){const c=await BK.auth.signInAnonymously();BK.uid=c.user.uid}
+ try{
+  if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+  BK.auth=firebase.auth();BK.db=firebase.database();
+  await BK.auth.setPersistence(MODE==='admin'?firebase.auth.Auth.Persistence.SESSION:firebase.auth.Auth.Persistence.LOCAL);
+  const u=await new Promise((resolve,reject)=>{let done=false;const un=BK.auth.onAuthStateChanged(x=>{if(!done){done=true;un();resolve(x)}},e=>{if(!done){done=true;un();reject(e)}})});
+  if(u)BK.uid=u.uid;
+  else if(MODE==='public'){const c=await BK.auth.signInAnonymously();BK.uid=c.user.uid}
+  BK.live=true;window.__fbBootFailed=false;
+ }catch(e){BK.live=false;BK.auth=null;BK.db=null;BK.uid=localVisitorId();window.__fbBootFailed=true;window.__chatErr=(e&&e.code)||'firebase/boot-failed';throw e}
 }
 async function bkLoadProfile(){if(!BK.live)return null;try{const s=await BK.db.ref(BK.T+'profile').once('value');return s.val()}catch(e){return null}}
 function bkSaveProfile(d){if(!BK.live||MODE!=='admin')return Promise.resolve();return BK.db.ref(BK.T+'profile').set(d)}
@@ -808,14 +811,20 @@ async function bkLogout(){if(BK.live&&BK.auth&&MODE==='admin'){try{await BK.auth
 function toArr(v){if(!v)return[];if(Array.isArray(v))return v;return Object.entries(v).map(([id,x])=>Object.assign({id},x)).sort((a,b)=>(a.ts||0)-(b.ts||0))}
 function bkWatchThread(uid,cb){
  if(!BK.live){const h=()=>cb(((lcGet()[uid]||{}).msgs)||[]);chatTick.push(h);h();return()=>{const i=chatTick.indexOf(h);if(i>-1)chatTick.splice(i,1)}}
- const r=BK.db.ref(BK.T+'chats/'+uid+'/msgs');const fn=s=>cb(toArr(s.val()));r.on('value',fn,err=>console.error(err));return()=>r.off('value',fn);
+ const r=BK.db.ref(BK.T+'chats/'+uid+'/msgs');
+ const fn=s=>{window.__chatErr='';cb(toArr(s.val()))};
+ r.on('value',fn,err=>{console.error('chat read',err);window.__chatErr=(err&&err.code)||'permission-denied';cb([])});
+ return()=>r.off('value',fn);
 }
 async function bkSend(uid,name,text,from,re){
  const ts=Date.now();
- if(!BK.live){const o=lcGet();const t=o[uid]||(o[uid]={name:'Pengunjung',msgs:[]});if(name&&!t.named){t.name=name;t.named=true}t.msgs.push(Object.assign({from,text,ts},re?{re:re}:{}));lcSet(o);lcNotify();return}
+ if(window.__fbBootFailed)throw new Error('Firebase belum tersambung. Muat ulang halaman dan periksa koneksi Firebase.');
+ if(!BK.live){const o=lcGet();const t=o[uid]||(o[uid]={name:'Pengunjung',msgs:[]});if(name&&!t.named){t.name=name;t.named=true}const msg=Object.assign({from,text,ts},re?{re:re}:{});t.msgs.push(msg);lcSet(o);lcNotify();return{ts};}
+ if(!BK.uid)throw new Error('Sesi pengunjung belum siap. Muat ulang halaman.');
  const ref=BK.db.ref(BK.T+'chats/'+uid);
  if(name)await ref.child('meta/name').transaction(cur=>cur||name);
- await ref.child('msgs').push(Object.assign({from,text,ts:firebase.database.ServerValue.TIMESTAMP},re?{re:re}:{}));
+ const pushed=await ref.child('msgs').push(Object.assign({from,text,ts:firebase.database.ServerValue.TIMESTAMP},re?{re:re}:{}));
+ return{key:pushed.key,ts};
 }
 function fmtTime(ts){return ts?new Date(ts).toLocaleString('id-ID',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}
 /* --- sisi pengunjung --- */
@@ -939,10 +948,10 @@ document.querySelectorAll('.mobile-link').forEach(a=>a.onclick=()=>$('mobileMenu
  const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.08});els.forEach(e=>io.observe(e))})();
 render();applyRole();
 render();applyRole();langMO.observe(document.body,{childList:true,subtree:true,characterData:true});applyLang();
-window.__BK_READY=bkBoot().catch(e=>{BK.bootError=e;console.error('Firebase initialization failed:',e)}).then(()=>{
- if(BK.live&&BK.db){BK.db.ref(BK.T+'profile').on('value',s=>{const p=s.val();if(p&&!editorOpen())applyProfile(p)},e=>console.error('Profile listener:',e))}
+bkBoot().catch(e=>console.error('boot',e)).then(()=>{
+ if(BK.live){BK.db.ref(BK.T+'profile').on('value',s=>{const p=s.val();if(p&&!editorOpen())applyProfile(p)},e=>console.error(e))}
  if(MODE==='public')bkStartVisitor();
- return BK;
+  
 });
 
 /* ===== SIDEBAR (garis tiga) ===== */
@@ -1305,7 +1314,7 @@ function pvGroup(){
 .waRow{display:flex}.waRow.me{justify-content:flex-end}
 .waB{max-width:82%;padding:7px 10px 5px;border-radius:12px;font-size:14.5px;line-height:1.4;color:#fff;white-space:pre-wrap;overflow-wrap:anywhere}
 .waRow.ow .waB{background:rgba(255,255,255,.12);border:1px solid rgba(205,225,242,.22);border-top-left-radius:3px}
-.waRow.me .waB{background:linear-gradient(135deg,#0f766e,#0d9488);border-top-right-radius:3px}
+.waRow.me .waB{background:linear-gradient(135deg,rgba(28,83,133,.94),rgba(12,39,73,.96));border:1px solid rgba(142,202,255,.42);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 5px 18px rgba(15,55,100,.22);border-top-right-radius:3px}
 .waB i{display:block;text-align:right;font-style:normal;font-size:10.5px;color:rgba(255,255,255,.7);margin-top:2px}.waB u{text-decoration:none;color:#7de8ff}
 .waEmpty{margin:auto;text-align:center;color:#b6c4d8;font-size:13.5px;line-height:1.5}
 .waId{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px 0;background:rgba(7,18,36,.55)}.waId.hidden{display:none}
@@ -1371,7 +1380,7 @@ const tm=t=>t?new Date(t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-d
 window.lockFields=function(){};
 function waLock(){const n=LS.getItem('pf_visitor_name'),e=LS.getItem('pf_visitor_email'),r=$('waId');if(r)r.classList.toggle('hidden',!!(n&&e))}
 let cache=[],RT=0;function waRender(m){if(m)cache=m;else m=cache;if(!BK.live)RT=((lcGet()[BK.uid||localVisitorId()]||{}).read)||0;const el=$('waMsgs');if(!el)return;const near=el.scrollHeight-el.scrollTop-el.clientHeight<90;let h='',last='';
- if(!m.length)h='<p class="waEmpty">Belum ada pesan.<br>Tulis pesan pertama Anda di bawah.</p>';
+ if(!m.length)h='<p class="waEmpty">'+(window.__fbBootFailed?'Chat belum terhubung. Periksa koneksi Firebase lalu muat ulang halaman.':(window.__chatErr?'Riwayat pesan belum dapat dimuat. Periksa izin Firebase.':'Belum ada pesan. Mulai percakapan di bawah.'))+'</p>';
  m.forEach(x=>{const dl=dayLabel(x.ts);if(dl!==last){h+='<div class="waDay"><span>'+esc(dl)+'</span></div>';last=dl}
   const me=x.from==='visitor';let t=String(x.text||'');if(me)t=t.replace(/\n✉ \S+$/,'');
   h+='<div class="waRow '+(me?'me':'ow')+'" data-ts="'+(x.ts||0)+'" data-f="'+esc(x.from)+'"><div class="waB">'+(window.pfQt?pfQt(x.re):'')+esc(t)+'<i>'+tm(x.ts)+(me?(x.ts&&x.ts<=RT?' <u>✓✓</u>':' <s>✓</s>'):'')+'</i></div></div>'});
@@ -1386,9 +1395,12 @@ window.handleFormSubmit=async function(){
  if(!email){email=$('chatEmail').value.trim().slice(0,120);if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){$('chatEmail').focus();return}}
  const first=!LS.getItem('pf_visitor_name'),txt=(first?'['+$('chatSubject').value+'] ':'')+t+(first?'\n✉ '+email:'');
  const b=$('sendBtn');b.disabled=true;
- try{await bkSend(BK.uid||localVisitorId(),name,txt,'visitor');last=Date.now();LS.setItem('pf_visitor_name',name);LS.setItem('pf_visitor_email',email);
-  const x=$('chatText');x.value='';x.style.height='auto';waLock()}
- catch(e){alert('Gagal mengirim. Periksa koneksi lalu coba lagi.')}
+ try{
+  const saved=await bkSend(BK.uid||localVisitorId(),name,txt,'visitor');last=Date.now();LS.setItem('pf_visitor_name',name);LS.setItem('pf_visitor_email',email);
+  const localMsg={id:saved&&saved.key,from:'visitor',text:txt,ts:(saved&&saved.ts)||Date.now()};
+  if(BK.live&&!cache.some(m=>saved&&saved.key&&m.id===saved.key)){cache=cache.concat(localMsg);waRender(cache)}
+  const x=$('chatText');x.value='';x.style.height='auto';waLock()
+ }catch(e){alert('Pesan belum terkirim: '+(e&&e.message?e.message:'Periksa koneksi Firebase.'))}
  b.disabled=false};
 function head(){const n=$('waNm');if(n){n.textContent=D.name;$('waAv').textContent=initials(D.name)}}
 const r0=render;render=function(){cleanD();r0();stats();head()};
@@ -2576,61 +2588,6 @@ if(typeof drawLists==='function'){const r=drawLists;drawLists=function(){const v
 setTimeout(()=>{try{addBtns()}catch(e){}},800);
 })();
 
-</script>
-<script id="aslb-message-reliability">
-(function(){
-  'use strict';
-  let sending=false,lastSentAt=0;
-  function el(id){return document.getElementById(id)}
-  function status(message,ok){
-    let n=el('messageSendStatus');
-    const host=el('contactBox')||el('chatLogWrap')||el('sendBtn')?.parentElement;
-    if(!n&&host){n=document.createElement('p');n.id='messageSendStatus';n.setAttribute('role','status');n.setAttribute('aria-live','polite');n.style.cssText='font:12px/1.5 sans-serif;margin:8px 0;color:'+(ok?'#86efac':'#fca5a5');host.appendChild(n)}
-    if(n){n.textContent=message;n.style.color=ok?'#86efac':'#fca5a5'}
-  }
-  window.handleFormSubmit=async function(){
-    if(MODE==='admin'){alert('Ini hanya pratinjau. Untuk mengirim pesan, buka website publik.');return}
-    const btn=el('sendBtn'),field=el('chatText');
-    if(sending)return;
-    if(!field){status('Kolom pesan tidak ditemukan. Muat ulang halaman.',false);return}
-    const text=(field.value||'').trim();
-    if(!text){status('Tulis pesan terlebih dahulu.',false);field.focus();return}
-    const honeypot=el('waHp');
-    if(honeypot&&honeypot.value.trim()){status('Pengiriman ditolak oleh pemeriksaan keamanan. Kosongkan kolom dan muat ulang halaman.',false);return}
-    const nameSaved=LS.getItem('pf_visitor_name')||'';
-    const emailSaved=LS.getItem('pf_visitor_email')||'';
-    let name=nameSaved,email=emailSaved;
-    if(!name){const n=el('chatName');name=(n?.value||'').trim().slice(0,60);if(!name){status('Isi nama atau perusahaan terlebih dahulu.',false);n?.focus();return}}
-    if(!email){const e=el('chatEmail');email=(e?.value||'').trim().slice(0,120);if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){status('Masukkan alamat email yang valid.',false);e?.focus();return}}
-    if(Date.now()-lastSentAt<1800){status('Tunggu sebentar sebelum mengirim pesan berikutnya.',false);return}
-    sending=true;if(btn)btn.disabled=true;status('Menghubungkan ke server…',true);
-    try{
-      if(window.__BK_READY)await window.__BK_READY;
-      if(BK.bootError)throw BK.bootError;
-      if(!BK.live||!BK.auth||!BK.auth.currentUser||!BK.auth.currentUser.uid){throw new Error('Autentikasi Firebase belum siap. Aktifkan Anonymous di Firebase Authentication lalu muat ulang website.')}
-      const uid=BK.auth.currentUser.uid;
-      BK.uid=uid;
-      const subject=el('chatSubject')?.value||'Pesan portofolio';
-      const first=!nameSaved;
-      const message=(first?'['+subject+'] ':'')+text+(first?'\n✉ '+email:'');
-      await bkSend(uid,name,message,'visitor');
-      LS.setItem('pf_visitor_name',name);LS.setItem('pf_visitor_email',email);
-      field.value='';field.style.height='auto';lastSentAt=Date.now();
-      if(typeof waLock==='function')waLock();
-      if(typeof lockFields==='function')lockFields();
-      status('Pesan berhasil dikirim. Terima kasih, pesan akan masuk ke pemilik portofolio.',true);
-    }catch(err){
-      console.error('Message send failed:',err);
-      status('Pesan belum terkirim: '+(err&&err.message?err.message:'Kesalahan koneksi Firebase'),false);
-    }finally{sending=false;if(btn)btn.disabled=false}
-  };
-  document.addEventListener('click',function(e){
-    const b=e.target&&e.target.closest&&e.target.closest('#sendBtn');
-    if(!b)return;
-    if(b.getAttribute('onclick'))return;
-    e.preventDefault();window.handleFormSubmit();
-  },true);
-})();
 </script>
 </body>
 </html>

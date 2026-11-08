@@ -1,6 +1,7 @@
 const {admin}=require('./_lib');
 const ORIGINS=['https://aslb.vercel.app','https://aslbadmin.vercel.app','https://aslbwork.vercel.app'];
 module.exports=async(req,res)=>{
+ res.setHeader('Cache-Control','no-store');
  const o=req.headers.origin;
  if(ORIGINS.includes(o)){res.setHeader('Access-Control-Allow-Origin',o);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Headers','Content-Type');res.setHeader('Access-Control-Allow-Methods','POST,OPTIONS')}
  if(req.method==='OPTIONS')return res.status(204).end();
