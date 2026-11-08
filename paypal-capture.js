@@ -1,56 +1,24 @@
-const crypto = require('crypto');
-const { admin, pp, parsePrice, findProject } = require('./_lib');
-module.exports = async (req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method tidak diizinkan.' });
-  const { orderID, name, email } = req.body || {};
-  if (!/^[A-Z0-9]{10,30}$/i.test(orderID || '') || !String(name || '').trim() || !/^\S+@\S+\.\S+$/.test(email || '')) {
-    return res.status(400).json({ error: 'Nama, email, atau nomor pesanan tidak valid.' });
-  }
-  const db = admin.database();
-  try {
-    const existing = (await db.ref('paypal/' + orderID).get()).val();
-    if (existing && existing.code) return res.status(200).json({ code: existing.code });
-    let order;
-    try { order = await pp('/v2/checkout/orders/' + encodeURIComponent(orderID) + '/capture', 'POST'); }
-    catch (captureError) {
-      // If a previous request captured the payment but failed before issuing the code,
-      // read the order and safely finish license issuance instead of failing permanently.
-      order = await pp('/v2/checkout/orders/' + encodeURIComponent(orderID), 'GET');
-    }
-    const unit = order.purchase_units && order.purchase_units[0];
-    const capture = unit && unit.payments && unit.payments.captures && unit.payments.captures[0];
-    const productId = String((unit && unit.custom_id) || '');
-    let item = null;
-    if (productId.startsWith('pj:')) {
-      const project = await findProject(productId.slice(3));
-      const price = project ? parsePrice(project.price) : 0;
-      if (price) item = { name: String(project.t), price, site: false };
-    } else if (/^[A-Za-z0-9_-]{1,40}$/.test(productId)) {
-      const product = (await db.ref('products/' + productId).get()).val();
-      const price = product ? Number(product.price) : 0;
-      if (product && Number.isFinite(price) && price > 0 && product.active !== false) item = { name: String(product.name), price, site: product.site === true };
-    }
-    if (order.status !== 'COMPLETED' || !capture || capture.status !== 'COMPLETED' || !item || !capture.amount || capture.amount.currency_code !== 'USD' || Number(capture.amount.value).toFixed(2) !== item.price.toFixed(2)) {
-      return res.status(402).json({ error: 'Pembayaran belum terverifikasi selesai. Simpan nomor pesanan: ' + orderID });
-    }
-    // Reserve one code per PayPal order atomically to prevent duplicate licenses on retries.
-    const codeRef = db.ref('paypal/' + orderID);
-    const proposed = 'ASLB-' + crypto.randomBytes(10).toString('hex').toUpperCase().match(/.{4}/g).join('-');
-    const tx = await codeRef.transaction(current => current && current.code ? current : { code: proposed, orderId: orderID, ts: admin.database.ServerValue.TIMESTAMP });
-    const code = tx.snapshot.val().code;
-    const licenseRef = db.ref('licenses/' + code);
-    const license = (await licenseRef.get()).val();
-    if (!license) {
-      await licenseRef.set({
-        name: String(name).trim().slice(0, 80), email: String(email).trim().slice(0, 120),
-        orderId: orderID, productId, productName: item.name.slice(0, 120), site: item.site,
-        status: 'active', ts: admin.database.ServerValue.TIMESTAMP
-      });
-    }
-    return res.status(200).json({ code });
-  } catch (error) {
-    console.error('[paypal-capture]', error && error.message);
-    return res.status(502).json({ error: 'Pembayaran belum dapat diverifikasi. Simpan nomor pesanan ' + orderID + ' dan hubungi pemilik website.' });
-  }
+const crypto=require('crypto');
+const {db,stamp,pp,parsePrice,findProject,body,fail}=require('./_lib');
+module.exports=async(req,res)=>{
+ if(req.method!=='POST')return res.status(405).json({error:'Metode tidak didukung.'});
+ const {orderID,name,email}=body(req);
+ if(!/^[A-Z0-9]{10,30}$/i.test(orderID||'')||!String(name||'').trim()||!/^\S+@\S+\.\S+$/.test(email||''))return res.status(400).json({error:'Data tidak valid.'});
+ try{
+  const d=db();
+  const old=(await d.ref('paypal/'+orderID).get()).val();
+  if(old&&old.code)return res.json({code:old.code});
+  let cap;
+  try{cap=await pp('/v2/checkout/orders/'+orderID+'/capture','POST')}
+  catch(e){if(e.pp&&JSON.stringify(e.pp).indexOf('ORDER_ALREADY_CAPTURED')>-1)cap=await pp('/v2/checkout/orders/'+orderID,'GET');else throw e}
+  const u=cap.purchase_units&&cap.purchase_units[0],c=u&&u.payments&&u.payments.captures&&u.payments.captures[0];
+  const pid=String((u&&u.custom_id)||'');
+  let item=null;
+  if(pid.indexOf('pj:')===0){const x=await findProject(pid.slice(3)),pr=x?parsePrice(x.price):0;if(pr)item={name:String(x.t),price:pr,site:false}}
+  else if(pid){const p=(await d.ref('products/'+pid).get()).val();if(p)item={name:String(p.name),price:Number(p.price),site:p.site===true}}
+  if(cap.status!=='COMPLETED'||!c||c.status!=='COMPLETED'||!item||c.amount.currency_code!=='USD'||Number(c.amount.value)<item.price)return res.status(402).json({error:'Pembayaran belum lengkap. Simpan nomor pesanan: '+orderID});
+  const h=crypto.randomBytes(10).toString('hex').toUpperCase(),code='ASLB-'+h.match(/.{4}/g).join('-');
+  await d.ref().update({['licenses/'+code]:{name:String(name).trim().slice(0,80),email:String(email).slice(0,120),orderId:orderID,productId:pid,productName:item.name.slice(0,120),amount:String(c.amount.value),site:item.site,status:'active',ts:stamp()},['paypal/'+orderID]:{code}});
+  res.json({code});
+ }catch(e){console.error('capture',orderID,e&&e.stack||e);res.status(500).json({error:(e&&e.pub)||'Gagal memproses. Simpan nomor pesanan: '+orderID})}
 };

@@ -1,79 +1,50 @@
-const admin = require('firebase-admin');
+const admin=require('firebase-admin');
+const DBURL='https://aslb-189b4-default-rtdb.asia-southeast1.firebasedatabase.app';
+function need(n){const v=process.env[n];if(!v||!String(v).trim()){const e=new Error('ENV_'+n);e.pub='Variabel '+n+' belum diisi di Vercel (Settings > Environment Variables).';throw e}return String(v).trim()}
+function init(){
+ if(admin.apps.length)return;
+ let sa;
+ try{sa=JSON.parse(need('FIREBASE_SERVICE_ACCOUNT'))}catch(e){if(e.pub)throw e;const x=new Error('SA_JSON');x.pub='FIREBASE_SERVICE_ACCOUNT bukan JSON yang valid. Tempel ulang seluruh isi file service account.';throw x}
+ if(sa.private_key)sa.private_key=String(sa.private_key).replace(/\\n/g,'\n');
+ admin.initializeApp({credential:admin.credential.cert(sa),databaseURL:(process.env.FIREBASE_DB_URL||DBURL).trim()});
+}
+const db=()=>{init();return admin.database()};
+const auth=()=>{init();return admin.auth()};
+const stamp=()=>admin.database.ServerValue.TIMESTAMP;
 
-function required(name) {
-  const value = process.env[name];
-  if (!value || !String(value).trim()) throw new Error('Missing environment variable: ' + name);
-  return String(value).trim();
+const HOST={live:'https://api-m.paypal.com',sandbox:'https://api-m.sandbox.paypal.com'};
+let envCache=null;
+async function tokenFor(env){
+ const id=need('PAYPAL_CLIENT_ID'),sec=need('PAYPAL_SECRET');
+ const r=await fetch(HOST[env]+'/v1/oauth2/token',{method:'POST',headers:{Authorization:'Basic '+Buffer.from(id+':'+sec).toString('base64'),'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials'});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok||!j.access_token){const e=new Error('PP_AUTH_'+env+'_'+(j.error||r.status));e.isAuth=true;throw e}
+ return j.access_token;
 }
-function paypalMode() {
-  const mode = required('PAYPAL_ENV').toLowerCase();
-  if (mode !== 'live' && mode !== 'sandbox') throw new Error('PAYPAL_ENV must be exactly "live" or "sandbox".');
-  return mode;
+async function getToken(){
+ const pref=String(process.env.PAYPAL_ENV||'').trim().toLowerCase()==='live'?'live':'sandbox';
+ const order=envCache?[envCache]:[pref,pref==='live'?'sandbox':'live'];
+ for(const env of order){
+  try{const t=await tokenFor(env);envCache=env;return{t,env}}
+  catch(e){if(!e.isAuth)throw e}
+ }
+ envCache=null;
+ const x=new Error('PP_AUTH');x.pub='PayPal menolak Client ID / Secret. Pastikan PAYPAL_CLIENT_ID dan PAYPAL_SECRET berasal dari aplikasi PayPal yang sama.';throw x;
 }
-if (!admin.apps.length) {
-  const raw = required('FIREBASE_SERVICE_ACCOUNT');
-  let serviceAccount;
-  try { serviceAccount = JSON.parse(raw); }
-  catch (_) { throw new Error('FIREBASE_SERVICE_ACCOUNT must contain the full Firebase service-account JSON.'); }
-  if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT JSON is missing project_id, client_email, or private_key.');
-  }
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: required('FIREBASE_DB_URL')
-  });
+async function pp(path,method,body){
+ const {t,env}=await getToken();
+ const r=await fetch(HOST[env]+path,{method:method||'GET',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok){console.error('PayPal API error',path,r.status,JSON.stringify(j).slice(0,600));const e=new Error('PP_'+r.status);e.pp=j;e.status=r.status;throw e}
+ return j;
 }
-const base = () => paypalMode() === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
-async function readJson(response) {
-  const raw = await response.text();
-  try { return raw ? JSON.parse(raw) : {}; } catch (_) { return { message: raw.slice(0, 300) }; }
-}
-async function pp(path, method, body) {
-  const clientId = required('PAYPAL_CLIENT_ID');
-  const secret = required('PAYPAL_SECRET');
-  const host = base();
-  const tokenResponse = await fetch(host + '/v1/oauth2/token', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Basic ' + Buffer.from(clientId + ':' + secret).toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: 'grant_type=client_credentials'
-  });
-  const token = await readJson(tokenResponse);
-  if (!tokenResponse.ok || !token.access_token) {
-    const detail = token.error_description || token.error || ('HTTP ' + tokenResponse.status);
-    throw new Error('PayPal OAuth failed: ' + String(detail).slice(0, 180));
-  }
-  const response = await fetch(host + path, {
-    method,
-    headers: {
-      Authorization: 'Bearer ' + token.access_token,
-      'Content-Type': 'application/json',
-      'PayPal-Request-Id': 'aslb-' + require('crypto').randomUUID()
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
-  const data = await readJson(response);
-  if (!response.ok) {
-    const detail = data.message || data.name || (data.details && data.details[0] && data.details[0].description) || ('HTTP ' + response.status);
-    throw new Error('PayPal API ' + response.status + ': ' + String(detail).slice(0, 180));
-  }
-  return data;
-}
-function parsePrice(v) {
-  let s = String(v == null ? '' : v).replace(/[^\d.,]/g, '');
-  if (!s) return 0;
-  const lc = s.lastIndexOf(','), ld = s.lastIndexOf('.');
-  if (lc > -1 && ld > -1) s = lc > ld ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
-  else if (lc > -1) s = (/,\d{1,2}$/.test(s) && s.split(',').length === 2) ? s.replace(',', '.') : s.replace(/,/g, '');
-  else if (ld > -1 && /^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
-  const n = parseFloat(s);
-  return Number.isFinite(n) && n > 0 && n < 1e7 ? Math.round(n * 100) / 100 : 0;
-}
-async function findProject(title) {
-  const value = (await admin.database().ref('profile/projects').get()).val();
-  const list = Array.isArray(value) ? value : Object.values(value || {});
-  return list.find(item => item && String(item.t) === title) || null;
-}
-module.exports = { admin, pp, parsePrice, findProject };
+function parsePrice(v){var s=String(v==null?'':v).replace(/[^\d.,]/g,'');if(!s)return 0;var lc=s.lastIndexOf(','),ld=s.lastIndexOf('.');
+ if(lc>-1&&ld>-1){s=lc>ld?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'')}
+ else if(lc>-1){s=(/,\d{1,2}$/.test(s)&&s.split(',').length===2)?s.replace(',','.'):s.replace(/,/g,'')}
+ else if(ld>-1){if(/^\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'')}
+ var n=parseFloat(s);return isFinite(n)&&n>0&&n<1e7?Math.round(n*100)/100:0}
+async function listProjects(){const v=(await db().ref('profile/projects').get()).val();return(Array.isArray(v)?v:Object.values(v||{})).filter(z=>z&&z.t)}
+async function findProject(title){const t=String(title).trim();return(await listProjects()).find(z=>String(z.t).trim()===t)||null}
+function body(req){let b=req.body;if(typeof b==='string'){try{b=JSON.parse(b)}catch(e){b={}}}return b&&typeof b==='object'?b:{}}
+function fail(res,e,def){console.error(e&&e.stack||e);return res.status(500).json({error:(e&&e.pub)||def})}
+module.exports={admin,db,auth,stamp,init,pp,getToken,parsePrice,listProjects,findProject,body,fail};
