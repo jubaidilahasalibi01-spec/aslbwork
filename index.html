@@ -762,6 +762,7 @@ function render(){
 function applyRole(){
  const r=ss.get(ROLE_KEY),ok=!!r,isA=r==='admin';
  $('gatewayScreen').classList.toggle('hidden',ok);
+ if(!ok)document.querySelectorAll('body>section.vw').forEach(s=>s.classList.remove('vw'));
  $('navbar').classList.toggle('hidden',!ok);
  ['adminFloatingControls','dashboard','navDash','navDashM'].forEach(i=>{const e=$(i);if(e)e.classList.toggle('hidden',!isA)});
  document.body.style.overflow=ok?'':'hidden';
@@ -1371,6 +1372,7 @@ if(cb){
 const tm=t=>t?new Date(t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'';
 window.lockFields=function(){};
 function waLock(){const n=LS.getItem('pf_visitor_name'),e=LS.getItem('pf_visitor_email'),r=$('waId');if(r)r.classList.toggle('hidden',!!(n&&e))}
+window.waLock=waLock;
 let cache=[],RT=0;function waRender(m){if(m)cache=m;else m=cache;if(!BK.live)RT=((lcGet()[BK.uid||localVisitorId()]||{}).read)||0;const el=$('waMsgs');if(!el)return;const near=el.scrollHeight-el.scrollTop-el.clientHeight<90;let h='',last='';
  if(!m.length)h='<p class="waEmpty">Belum ada pesan.<br>Tulis pesan pertama Anda di bawah.</p>';
  m.forEach(x=>{const dl=dayLabel(x.ts);if(dl!==last){h+='<div class="waDay"><span>'+esc(dl)+'</span></div>';last=dl}
@@ -2737,9 +2739,14 @@ setTimeout(()=>{try{addBtns()}catch(e){}},800);
       if(!BK.live||!BK.auth||!BK.auth.currentUser||!BK.auth.currentUser.uid){throw new Error('Autentikasi Firebase belum siap. Aktifkan Anonymous di Firebase Authentication lalu muat ulang website.')}
       const uid=BK.auth.currentUser.uid;
       BK.uid=uid;
+      const mref=BK.db.ref(BK.T+'chats/'+uid+'/meta');
+      let ms={};try{ms=(await mref.once('value')).val()||{}}catch(e){}
+      if(ms.name){name=ms.name}
+      if(ms.email){email=ms.email}
       const subject=el('chatSubject')?.value||'Pesan portofolio';
-      const first=!nameSaved;
+      const first=!ms.name&&!nameSaved;
       const message=(first?'['+subject+'] ':'')+text+(first?'\n✉ '+email:'');
+      await mref.child('email').transaction(function(c){return c||email});
       await bkSend(uid,name,message,'visitor');
       LS.setItem('pf_visitor_name',name);LS.setItem('pf_visitor_email',email);
       field.value='';field.style.height='auto';lastSentAt=Date.now();
@@ -2757,6 +2764,22 @@ setTimeout(()=>{try{addBtns()}catch(e){}},800);
     if(b.getAttribute('onclick'))return;
     e.preventDefault();window.handleFormSubmit();
   },true);
+})();
+</script>
+<script id="aslb-identity-lock">
+(function(){
+  if(typeof MODE==='undefined'||MODE!=='public')return;
+  var k=0,iv=setInterval(async function(){
+    if(++k>120){clearInterval(iv);return}
+    if(!(BK&&BK.live&&BK.uid&&BK.db))return;
+    clearInterval(iv);
+    try{
+      var m=(await BK.db.ref(BK.T+'chats/'+BK.uid+'/meta').once('value')).val()||{};
+      if(m.name){LS.setItem('pf_visitor_name',m.name)}
+      if(m.email){LS.setItem('pf_visitor_email',m.email)}
+      if(typeof window.waLock==='function')window.waLock();
+    }catch(e){}
+  },150);
 })();
 </script>
 <script id="aslbFx">
@@ -3903,6 +3926,8 @@ html body:not(:has(#gatewayScreen:not(.hidden))) #mapMove i.eT:first-of-type,
 html body .eSpin i.eT:first-of-type{left:0!important;width:100%!important;-webkit-mask-image:none!important;mask-image:none!important}
 @keyframes earthPanOne{from{transform:translate3d(0,0,0)}to{transform:translate3d(calc(-1*var(--P)),0,0)}}
 @media (prefers-reduced-motion:reduce){html body #mapMove,html body .eSpin{animation:none!important}}
+body:has(#gatewayScreen:not(.hidden))>section,body:has(#gatewayScreen:not(.hidden))>section.vw{display:none!important}
+body:has(#gatewayScreen:not(.hidden)) #sideNav,body:has(#gatewayScreen:not(.hidden)) #hamBtn,body:has(#gatewayScreen:not(.hidden)) #sbShade{display:none!important}
 </style>
 </body>
 </html>
