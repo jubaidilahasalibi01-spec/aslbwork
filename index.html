@@ -654,7 +654,7 @@ select.pmI{border-color:rgba(214,232,247,.55)!important}
  </div>
 </section>
 <script>
-(function(){
+document.addEventListener('DOMContentLoaded',function(){
  if(BK.T){var hb=document.querySelector('a[href="/beli.html"]');if(hb)hb.style.display='none';return}
  fetch('https://aslb-189b4-default-rtdb.asia-southeast1.firebasedatabase.app/products.json').then(function(r){return r.json()}).then(function(v){
   v=v||{};var L=document.getElementById('prodList'),n=0;if(!L)return;
@@ -667,7 +667,7 @@ select.pmI{border-color:rgba(214,232,247,.55)!important}
    c.appendChild(h);c.appendChild(d);c.appendChild(pr);c.appendChild(a);L.appendChild(c)});
   if(n)document.getElementById('produk').style.display='block';
  }).catch(function(){});
-})();
+});
 </script>
 <section id="contact" class="py-24 px-6 relative z-10 border-t border-titanium-border/60 bg-titanium-surface/40">
  <div class="max-w-5xl mx-auto">
@@ -855,7 +855,7 @@ async function handleFormSubmit(){
 }
 const TXT={'Beranda':'Home','Profil':'About','Riwayat':'History','Keahlian':'Skills','Proyek':'Projects','Hasil Proyek':'Projects','Penghargaan':'Awards','Kontak':'Contact','Logout':'Logout',
 'Selamat Datang di':'Welcome to','Silakan pilih opsi akses untuk melanjutkan.':'Please choose an access option to continue.','MASUK PORTOFOLIO (PUBLIK)':'ENTER PORTFOLIO (PUBLIC)','Akses publik dapat melihat proyek tanpa sandi':'Public access: view my work without a password',
-'Lihat Hasil Proyek':'View My Work','Hubungi Saya':'Contact Me','Beli Proyek':'Buy a Project','Tonton Video':'Watch Video','Profil Ringkas':'Summary','Perjalanan':'Journey','Daftar Keahlian':'Skill List','Showcase Hasil Proyek':'Portfolio Showcase','Daftar aplikasi dan web buatan saya selama ini.':'Applications and websites I have built so far.','Prestasi':'Recognition','Informasi Kontak':'Contact Information',
+'Lihat Portofolio':'View Portfolio','Lihat Hasil Proyek':'View My Work','Hubungi Saya':'Contact Me','Beli Proyek':'Buy a Project','Tonton Video':'Watch Video','Profil Ringkas':'Summary','Perjalanan':'Journey','Daftar Keahlian':'Skill List','Showcase Hasil Proyek':'Portfolio Showcase','Daftar aplikasi dan web buatan saya selama ini.':'Applications and websites I have built so far.','Prestasi':'Recognition','Informasi Kontak':'Contact Information',
 'Fokus':'Focus','Lokasi':'Location','Status':'Status','Bahasa':'Languages','Email':'Email','Belum ada riwayat.':'No history yet.','Belum ada hasil proyek.':'No projects yet.','Belum ada penghargaan.':'No awards yet.',
 '"Terus belajar dan menghasilkan proyek nyata melalui kode."':'"Keep learning and creating real work through code."',
 '"Sebagai pengembang web, saya aktif mengembangkan skill pemrograman dasar hingga web modern melalui proyek pribadi dan latihan mandiri."':'"As a web developer, I actively build programming skills from the basics to modern web through personal projects and self-study."',
@@ -3430,6 +3430,7 @@ function step(dt){
  }
  phi+=omg*dt;
  P.x+=V.x*dt;P.y+=V.y*dt;
+ var ymin=A.y+L0*.2;if(P.y<ymin){P.y=ymin;if(V.y<0)V.y=-V.y*.2}
  var rx=P.x-A.x,ry=P.y-A.y,pr=Math.atan2(-rx,ry);
  om+=(-62*(th-pr)-3.6*om)*dt;th+=om*dt;
 }
@@ -3872,5 +3873,36 @@ html body #gatewayScreen .gwFoot{color:#d6e6f5;text-shadow:0 1px 8px rgba(2,8,20
  setInterval(function(){var on=!!document.getElementById('cnOv');if(on)bedStart();else bedStop()},600);
 })();
 </script>
+<style id="gwFixFinal">
+/* FIX FINAL cover: badge & footer tidak numpuk, tinggi menyesuaikan isi, bisa scroll di layar pendek */
+html body div#gatewayScreen{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;overflow-x:hidden!important;overflow-y:auto!important;padding:max(14px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom))!important;-webkit-overflow-scrolling:touch}
+html body div#gatewayScreen.hidden{display:none!important}
+html body div#gatewayScreen .gwFrame{height:auto!important;min-height:0!important;max-height:none!important;flex:none!important;margin:auto 0 0!important;justify-content:flex-start!important;gap:clamp(8px,1.7vh,16px)!important;padding:clamp(16px,3vh,30px) clamp(16px,3vw,32px) clamp(16px,2.6vh,28px)!important;overflow:visible!important}
+html body div#gatewayScreen .gwFrame>*{flex:none;margin-top:0!important;margin-bottom:0!important}
+html body div#gatewayScreen .gwA{line-height:1.7!important;text-align:center}
+html body div#gatewayScreen .gwBadge{position:static!important;display:inline-flex!important;align-items:center;justify-content:center;gap:8px;margin:4px 0 0!important;white-space:nowrap}
+html body div#gatewayScreen .gwFoot{position:static!important;flex:none!important;display:block;width:100%;max-width:520px;margin:clamp(12px,2.2vh,20px) 0 auto!important;padding:0 8px!important;text-align:center;line-height:1.7!important;white-space:normal!important}
+@media (max-height:760px){
+ html body div#gatewayScreen .gwFrame .hexL,html body div#gatewayScreen .gwFrame img.gwLogo{width:78px!important;height:auto!important}
+ html body div#gatewayScreen .gw1,html body div#gatewayScreen .gw2,html body div#gatewayScreen #gwName{font-size:clamp(24px,4.6vh,36px)!important}
+ html body div#gatewayScreen .gwD{font-size:13px!important;line-height:1.5!important}
+ html body div#gatewayScreen .gwBtn{padding:11px 10px!important}
+ html body div#gatewayScreen .gwBtn.two .big{font-size:24px!important}
+}
+</style>
+<style id="earthOneTile">
+/* FIX: bumi beranda dalam = SATU foto utuh yang bergeser pelan bolak-balik (tanpa petak ganda / sambungan "dua dunia").
+   Sampul luar (gateway) TIDAK diubah: aturan ini hanya aktif setelah sampul luar ditutup. */
+html body:not(:has(#gatewayScreen:not(.hidden))) #mapMove,
+html body .eSpin{--W:max(120vw,var(--T));--P:calc(var(--W) - 100vw);
+ left:0!important;width:var(--W)!important;height:calc(var(--W)/1.7761)!important;top:calc(50% - var(--W)/3.5522)!important;
+ animation:earthPanOne 100s ease-in-out infinite alternate!important}
+html body:not(:has(#gatewayScreen:not(.hidden))) #mapMove i.eT:not(:first-of-type),
+html body .eSpin i.eT:not(:first-of-type){display:none!important}
+html body:not(:has(#gatewayScreen:not(.hidden))) #mapMove i.eT:first-of-type,
+html body .eSpin i.eT:first-of-type{left:0!important;width:100%!important;-webkit-mask-image:none!important;mask-image:none!important}
+@keyframes earthPanOne{from{transform:translate3d(0,0,0)}to{transform:translate3d(calc(-1*var(--P)),0,0)}}
+@media (prefers-reduced-motion:reduce){html body #mapMove,html body .eSpin{animation:none!important}}
+</style>
 </body>
 </html>
